@@ -70,14 +70,14 @@ func (t *Task) Start() {
 }
 
 // StartByExecutor 在预创建的协程节点中执行
-// name 任务名称，名称相同的任务会在同一个协程中串行执行
-func (t *Task) StartByExecutor(name string) {
-	sendToExecutor(t, name)
+// name 标识，标识相同的任务会在同一个协程中串行执行
+func (t *Task) StartByExecutor(key string) {
+	sendToExecutor(t, key)
 }
 
-// StartByFixExecutor 根据任务名称创建一个协程去执行，协程一旦创建就不会关闭
-// 如果已经有任务名称相同的协程了(已经使用相同的name调用过此方法)，就不会再创建新协程
-// name 任务名称，名称相同的任务会在同一个协程中串行执行
-func (t *Task) StartByFixExecutor(name string) {
-	sendToFixExecutor(t, name)
+// StartByFixExecutor 根据标识创建一个协程去执行，协程一旦创建就不会关闭
+// 如果已经有标识相同的协程了(已经使用相同的name调用过此方法)，就不会再创建新协程
+// name 标识，标识相同的任务会在同一个协程中串行执行
+func (t *Task) StartByFixExecutor(key string) {
+	sendToFixExecutor(t, key)
 }
