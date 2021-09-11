@@ -8,9 +8,8 @@ import (
 
 func DumpStackIfPanic() {
 	if err := recover(); err != nil {
-		log.Errorf("panic: %s", err)
 		var buf [4096]byte
 		n := runtime.Stack(buf[:], false)
-		log.Errorln(string(buf[:n]))
+		log.Errorf("panic: %s\n%s\n", err, string(buf[:n]))
 	}
 }

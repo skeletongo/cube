@@ -8,18 +8,6 @@ import (
 	"github.com/skeletongo/cube/base"
 )
 
-type Handle uint32
-
-type Action interface {
-	OnTimer(h Handle, ud interface{})
-}
-
-type ActionWrapper func(h Handle, ud interface{})
-
-func (w ActionWrapper) OnTimer(h Handle, ud interface{}) {
-	w(h, ud)
-}
-
 // 延时函数默认执行节点
 var defaultObject *base.Object
 
@@ -27,6 +15,8 @@ var defaultObject *base.Object
 func SetObject(o *base.Object) {
 	defaultObject = o
 }
+
+type Handle uint32
 
 // handles 保存所有未超时的定时器
 var handles = new(sync.Map)
@@ -38,24 +28,13 @@ func getHandle() Handle {
 	return Handle(atomic.AddUint32(&i, 1))
 }
 
-type Timer struct {
-	a    Action
-	h    Handle
-	data interface{}
-}
-
-func newTimer(o *base.Object, h Handle, a Action, data interface{}, interval time.Duration) *time.Timer {
+func newTimer(o *base.Object, h Handle, interval time.Duration, f func()) *time.Timer {
 	if o == nil {
 		o = defaultObject
 	}
-	e := &Timer{
-		a:    a,
-		h:    h,
-		data: data,
-	}
 	t := time.AfterFunc(interval, func() {
-		handles.Delete(e.h)
-		SendTimer(o, e)
+		handles.Delete(h)
+		SendTimer(o, f)
 	})
 	handles.Store(h, t)
 	return t
@@ -63,26 +42,24 @@ func newTimer(o *base.Object, h Handle, a Action, data interface{}, interval tim
 
 // NewTimer 创建延时方法
 // o 方法执行节点，为nil时在默认节点上执行
-// a 方法实例
-// data 方法执行需要的数据
 // interval 延时时长
+// f 方法实例
 // 返回延时方法的id,用来提前终止执行
-func NewTimer(o *base.Object, a Action, data interface{}, interval time.Duration) Handle {
+func NewTimer(o *base.Object, interval time.Duration, f func()) Handle {
 	var h = getHandle()
-	newTimer(o, h, a, data, interval)
+	newTimer(o, h, interval, f)
 	return h
 }
 
 // AfterTimer 创建在默认节点上执行的延时方法
-// w 方法实例
-// data 方法执行需要的数据
 // interval 延时时长
+// f 方法实例
 // 返回延时方法的id,用来提前终止执行
-func AfterTimer(w ActionWrapper, data interface{}, interval time.Duration) Handle {
-	return NewTimer(defaultObject, w, data, interval)
+func AfterTimer(interval time.Duration, f func()) Handle {
+	return NewTimer(defaultObject, interval, f)
 }
 
-func newCron(o *base.Object, h Handle, cronExpr *CronExpr, cb func()) *time.Timer {
+func newCron(o *base.Object, h Handle, cronExpr *CronExpr, f func()) *time.Timer {
 	now := time.Now()
 	nextTime := cronExpr.Next(now)
 	if nextTime.IsZero() {
@@ -91,19 +68,19 @@ func newCron(o *base.Object, h Handle, cronExpr *CronExpr, cb func()) *time.Time
 
 	// callback
 	var t *time.Timer
-	var _cb ActionWrapper
-	_cb = func(h Handle, ud interface{}) {
-		defer cb()
+	var _cb func()
+	_cb = func() {
+		defer f()
 
 		now := time.Now()
 		nextTime := cronExpr.Next(now)
 		if nextTime.IsZero() {
 			return
 		}
-		t = newTimer(o, h, _cb, nil, nextTime.Sub(now))
+		t = newTimer(o, h, nextTime.Sub(now), _cb)
 	}
 
-	t = newTimer(o, h, _cb, nil, nextTime.Sub(now))
+	t = newTimer(o, h, nextTime.Sub(now), _cb)
 	return t
 }
 

@@ -10,11 +10,13 @@ type Options struct {
 }
 
 func (o *Options) Init() {
-	if o.Interval > 0 {
+	if o.Interval < 0 {
+		o.Interval = 0
+	} else if o.Interval > 0 {
 		if o.Interval < 10 {
 			o.Interval = time.Millisecond * 10
 		} else {
-			o.Interval = time.Millisecond * o.Interval
+			o.Interval *= time.Millisecond
 		}
 	}
 }

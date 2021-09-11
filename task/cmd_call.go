@@ -10,15 +10,15 @@ import (
 // o 需要执行 Task.callFunc 的节点
 func sendCall(o *base.Object, t *Task) {
 	if t == nil {
-		log.Warningln("Task is nil")
+		log.Error("Task is nil")
 		return
 	}
 	if o == nil {
-		log.WithField("name", t.Name).Errorln("Task run CallFunc error: object is nil")
+		log.Error("Task run CallFunc error: object is nil")
 		return
 	}
 	o.Send(base.CommandWrapper(func(o *base.Object) error {
-		t.run(o)
+		t.call()
 		return nil
 	}))
 }

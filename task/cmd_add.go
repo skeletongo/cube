@@ -17,7 +17,7 @@ func sendToExecutor(t *Task, name string) {
 	}
 	Obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		if gMaster.closing {
-			log.WithField("name", t.Name).Warning("Task closed")
+			log.Warning("Task closed")
 			return nil
 		}
 		w := gMaster.getWorker(name)
@@ -37,7 +37,7 @@ func sendToFixExecutor(t *Task, name string) {
 	}
 	Obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		if gMaster.closing {
-			log.WithField("name", t.Name).Warning("Task closed")
+			log.Warning("Task closed")
 			return nil
 		}
 		w := gMaster.getWorkerByName(name)

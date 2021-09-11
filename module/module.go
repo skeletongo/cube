@@ -107,7 +107,7 @@ func (m *moduleMgr) init() {
 func (m *moduleMgr) update() {
 	nowTime := time.Now()
 	for e := m.mods.Front(); e != nil; e = e.Next() {
-		if mod := e.Value.(*module); mod.interval >= 0 {
+		if mod := e.Value.(*module); mod.interval > 0 {
 			mod.safeUpdate(nowTime)
 		}
 	}
@@ -193,7 +193,7 @@ func Closed(m Module) {
 }
 
 // Register 模块注册
-// interval 间隔时长；如果值为0表示以最短间隔时间执行update,取值范围大于等于0
+// interval 执行update的时间间隔
 // priority 优先级；值越小越优先处理
 func Register(m Module, interval time.Duration, priority int) {
 	mod := &module{

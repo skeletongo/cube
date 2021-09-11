@@ -119,7 +119,7 @@ func (o *Object) run() {
 }
 
 // canStop 判定节点是否可以关闭
-// 关闭条件：所有子节点已经关闭，所有收到的消息已经处理
+// 关闭条件：所有收到的消息已经处理
 func (o *Object) canStop() bool {
 	select {
 	case <-o.Closing:
@@ -132,7 +132,7 @@ func (o *Object) canStop() bool {
 func (o *Object) safeDone(cmd Command) {
 	defer utils.DumpStackIfPanic()
 
-	defer func() { o.doneNum++ }()
+	defer func() { atomic.AddUint64(&o.doneNum, 1) }()
 
 	if err := cmd.Done(o); err != nil {
 		panic(err)
@@ -175,29 +175,28 @@ func (o *Object) Send(c Command) {
 }
 
 // IsClosing 是否正在关闭
-func (o *Object) IsClosing() bool {
-	select {
-	case <-o.Closed:
-		return false
-	case <-o.Closing:
-		return true
-	default:
-		return false
-	}
-}
+//func (o *Object) IsClosing() bool {
+//	select {
+//	case <-o.Closed:
+//		return false
+//	case <-o.Closing:
+//		return true
+//	default:
+//		return false
+//	}
+//}
 
 // IsClosed 是否已经关闭
-func (o *Object) IsClosed() bool {
-	select {
-	case <-o.Closed:
-		return true
-	default:
-		return false
-	}
-}
+//func (o *Object) IsClosed() bool {
+//	select {
+//	case <-o.Closed:
+//		return true
+//	default:
+//		return false
+//	}
+//}
 
 // Close 关闭节点
-// 关闭一个节点需要它的所有子节点都关闭
 func (o *Object) Close() {
 	select {
 	case <-o.Closing:

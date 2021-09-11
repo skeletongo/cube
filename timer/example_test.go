@@ -2,9 +2,9 @@ package timer_test
 
 import (
 	"fmt"
-	"github.com/skeletongo/cube/base"
 	"time"
 
+	"github.com/skeletongo/cube/base"
 	"github.com/skeletongo/cube/timer"
 )
 
@@ -17,10 +17,11 @@ func init() {
 func ExampleNewTimer() {
 	ch := make(chan struct{})
 
-	timer.NewTimer(testObj, timer.ActionWrapper(func(h timer.Handle, ud interface{}) {
-		fmt.Println(int(time.Now().Sub(ud.(time.Time)).Seconds()))
+	t1 := time.Now()
+	timer.NewTimer(testObj, time.Second, func() {
+		fmt.Println(int(time.Now().Sub(t1).Seconds()))
 		ch <- struct{}{}
-	}), time.Now(), time.Second)
+	})
 
 	<-ch
 	// output:
@@ -30,11 +31,12 @@ func ExampleNewTimer() {
 func ExampleAfterTimer() {
 	ch := make(chan struct{})
 
+	t1 := time.Now()
 	timer.SetObject(testObj)
-	timer.AfterTimer(func(h timer.Handle, ud interface{}) {
-		fmt.Println(int(time.Now().Sub(ud.(time.Time)).Seconds()))
+	timer.AfterTimer(time.Second, func() {
+		fmt.Println(int(time.Now().Sub(t1).Seconds()))
 		ch <- struct{}{}
-	}, time.Now(), time.Second)
+	})
 
 	<-ch
 	// output:
@@ -77,9 +79,10 @@ func ExampleStartCron() {
 }
 
 func ExampleStop() {
-	h := timer.NewTimer(testObj, timer.ActionWrapper(func(h timer.Handle, ud interface{}) {
-		fmt.Println(int(time.Now().Sub(ud.(time.Time)).Seconds()))
-	}), time.Now(), time.Second)
+	t1 := time.Now()
+	h := timer.NewTimer(testObj, time.Second, func() {
+		fmt.Println(int(time.Now().Sub(t1).Seconds()))
+	})
 
 	timer.Stop(h)
 	time.Sleep(time.Second * 2)

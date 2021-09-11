@@ -21,16 +21,7 @@
                 "Area": 1,
                 "Type": 1,
                 "ID": 1,
-                "Name": "CubeTcpServer",
-                "Protocol": "tcp",
-                "Ip": "127.0.0.1",
-                "Port": 8888
-            },
-            {
-                "Area": 1,
-                "Type": 2,
-                "ID": 1,
-                "Name": "CubeTcpClient",
+                "Name": "TcpService",
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
                 "Port": 8888

@@ -2,8 +2,6 @@ package task_test
 
 import (
 	"fmt"
-	"testing"
-	"time"
 
 	"github.com/skeletongo/cube/base"
 	"github.com/skeletongo/cube/task"
@@ -19,16 +17,17 @@ func init() {
 	task.Config.Init()
 }
 
-func ExampleTask_Start() {
+func ExampleTask_Go() {
 	ch := make(chan struct{})
-	task.New(task.Obj, func(o *base.Object) interface{} {
+	n := -1
+	task.New(task.Obj, func() {
 		fmt.Println("1")
-		return "2"
-	}, func(ret interface{}, t *task.Task) {
-		fmt.Println(ret)
+		n = 2
+	}, func() {
+		fmt.Println(n)
 		fmt.Println(3)
 		ch <- struct{}{}
-	}).Start()
+	}).Go()
 	<-ch
 	// output:
 	// 1
@@ -36,16 +35,17 @@ func ExampleTask_Start() {
 	// 3
 }
 
-func ExampleTask_StartByExecutor() {
+func ExampleTask_GoByExecutor() {
 	ch := make(chan struct{})
-	task.New(task.Obj, func(o *base.Object) interface{} {
+	n := -1
+	task.New(task.Obj, func() {
 		fmt.Println("1")
-		return "2"
-	}, func(ret interface{}, t *task.Task) {
-		fmt.Println(ret)
+		n = 2
+	}, func() {
+		fmt.Println(n)
 		fmt.Println(3)
 		ch <- struct{}{}
-	}).StartByExecutor("task")
+	}).GoByExecutor("task")
 	<-ch
 	// output:
 	// 1
@@ -53,127 +53,20 @@ func ExampleTask_StartByExecutor() {
 	// 3
 }
 
-func ExampleTask_StartByFixExecutor() {
+func ExampleTask_GoByFixExecutor() {
 	ch := make(chan struct{})
-	task.New(task.Obj, func(o *base.Object) interface{} {
+	n := -1
+	task.New(task.Obj, func() {
 		fmt.Println("1")
-		return "2"
-	}, func(ret interface{}, t *task.Task) {
-		fmt.Println(ret)
+		n = 2
+	}, func() {
+		fmt.Println(n)
 		fmt.Println(3)
 		ch <- struct{}{}
-	}).StartByFixExecutor("task")
+	}).GoByFixExecutor("task")
 	<-ch
 	// output:
 	// 1
 	// 2
 	// 3
-}
-
-func TestTask_StartByExecutor(t *testing.T) {
-	ch := make(chan string, 3)
-	A, B := "a", "b"
-
-	task.New(task.Obj, func(o *base.Object) interface{} {
-		t.Logf("task name: %s, object name: %s\n", A, o.Name)
-		return o.Name
-	}, func(ret interface{}, t *task.Task) {
-		ch <- fmt.Sprint(ret, A)
-	}).StartByExecutor(A)
-
-	task.New(task.Obj, func(o *base.Object) interface{} {
-		t.Logf("task name: %s, object name: %s\n", A, o.Name)
-		return o.Name
-	}, func(ret interface{}, t *task.Task) {
-		ch <- fmt.Sprint(ret, A)
-	}).StartByExecutor(A)
-
-	task.New(task.Obj, func(o *base.Object) interface{} {
-		t.Logf("task name: %s, object name: %s\n", B, o.Name)
-		return o.Name
-	}, func(ret interface{}, t *task.Task) {
-		ch <- fmt.Sprint(ret, B)
-	}).StartByExecutor(B)
-
-	var names []string
-	for i := 0; i < 3; i++ {
-		select {
-		case v := <-ch:
-			names = append(names, v)
-		case <-time.Tick(time.Second):
-			t.Error("1")
-			return
-		}
-	}
-	t.Log(names)
-
-	if len(names) != 3 {
-		t.Error("2")
-		return
-	}
-
-	if names[0] == names[1] && names[0] != names[2] {
-		return
-	}
-	if names[1] == names[2] && names[0] != names[1] {
-		return
-	}
-	if names[0] == names[2] && names[0] != names[1] {
-		return
-	}
-	t.Error("3")
-}
-
-func TestTask_StartByFixExecutor(t *testing.T) {
-	ch := make(chan string, 3)
-	A, B := "a", "b"
-
-	task.New(task.Obj, func(o *base.Object) interface{} {
-		t.Logf("task name: %s, object name: %s\n", A, o.Name)
-		return o.Name
-	}, func(ret interface{}, t *task.Task) {
-		ch <- fmt.Sprint(ret, A)
-	}).StartByFixExecutor(A)
-
-	task.New(task.Obj, func(o *base.Object) interface{} {
-		t.Logf("task name: %s, object name: %s\n", A, o.Name)
-		return o.Name
-	}, func(ret interface{}, t *task.Task) {
-		ch <- fmt.Sprint(ret, A)
-	}).StartByFixExecutor(A)
-
-	task.New(task.Obj, func(o *base.Object) interface{} {
-		t.Logf("task name: %s, object name: %s\n", B, o.Name)
-		return o.Name
-	}, func(ret interface{}, t *task.Task) {
-		ch <- fmt.Sprint(ret, B)
-	}).StartByFixExecutor(B)
-
-	var names []string
-	for i := 0; i < 3; i++ {
-		select {
-		case v := <-ch:
-			names = append(names, v)
-		case <-time.Tick(time.Second):
-			t.Error("1")
-			return
-		}
-	}
-	t.Log(names)
-
-	if len(names) != 3 {
-		t.Error("2")
-		return
-	}
-
-	if names[0] == names[1] && names[0] != names[2] {
-		return
-	}
-	if names[1] == names[2] && names[0] != names[1] {
-		return
-	}
-	if names[0] == names[2] && names[0] != names[1] {
-		return
-	}
-	t.Error("3")
 }
