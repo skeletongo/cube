@@ -124,7 +124,13 @@ func (t *TCPClient) Update() {
 			return
 
 		case conn := <-t.connCh:
-			s := NewSession(t.SC, NewTCPConn(conn, t.SC))
+			tcpConn, err := NewTCPConn(conn, t.SC)
+			if err != nil {
+				log.WithField("service", t.SC).Error("NewTCPConn error:", err)
+				conn.Close()
+				continue
+			}
+			s := NewSession(t.SC, tcpConn)
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {

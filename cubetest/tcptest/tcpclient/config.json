@@ -26,7 +26,15 @@
                 "Ip": "127.0.0.1",
                 "Port": 8888,
                 "IsClient": true,
-                "ClientNum": 1
+                "ClientNum": 1,
+                "MTU": 0,
+                "Linger": 0,
+                "KeepAlive": false,
+                "KeepAlivePeriod": 0,
+                "ReadBuffer": 0,
+                "WriteBuffer": 0,
+                "ReadTimeout": 0,
+                "WriteTimeout": 0
             }
         ]
     }

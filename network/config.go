@@ -46,18 +46,21 @@ type ServiceConfig struct {
 	ReconnectInterval time.Duration // 重连间隔
 	ClientNum         int           // 建立连接数量（IsClient为true时有效）
 
-	// 连接配置
-	MTU             int           // MTU
-	Linger          int           // Linger
-	NoDelay         bool          // NoDelay
-	KeepAlive       bool          // KeepAlive
-	KeepAlivePeriod time.Duration // KeepAlivePeriod
-	ReadBuffer      int           // ReadBuffer
-	WriteBuffer     int           // WriteBuffer
-	ReadTimeout     time.Duration // ReadTimeout
-	WriteTimeout    time.Duration // WriteTimeout
+	MTU             int           // 网络传输最大数据包,单位字节
+	Linger          int           // 控制连接断开时的行为，连接断开后是否立刻丢弃还没有发送的缓存数据，单位秒
+	KeepAlive       bool          // 是否启用心跳功能
+	KeepAlivePeriod time.Duration // 开启心跳功能后的发送消息的时间间隔,单位秒
+	ReadBuffer      int           // 接收数据缓冲区大小,单位字节
+	WriteBuffer     int           // 发送数据缓冲区大小,单位字节
+	ReadTimeout     time.Duration // 读取数据超时时长,单位秒
+	WriteTimeout    time.Duration // 写入数据超时时长,单位秒
 
 	seq int
+}
+
+func (sc *ServiceConfig) GetSeq() int {
+	sc.seq++
+	return sc.seq
 }
 
 func (sc *ServiceConfig) Init() {
@@ -78,11 +81,15 @@ func (sc *ServiceConfig) Init() {
 	if sc.ClientNum < 0 {
 		sc.ClientNum = 0
 	}
-}
-
-func (sc *ServiceConfig) GetSeq() int {
-	sc.seq++
-	return sc.seq
+	if sc.KeepAlivePeriod > 0 {
+		sc.KeepAlivePeriod *= time.Second
+	}
+	if sc.ReadTimeout > 0 {
+		sc.ReadTimeout *= time.Second
+	}
+	if sc.WriteTimeout > 0 {
+		sc.WriteTimeout *= time.Second
+	}
 }
 
 func (sc *ServiceConfig) String() string {

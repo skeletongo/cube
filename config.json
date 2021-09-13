@@ -24,16 +24,33 @@
                 "Name": "CubeTcpServer",
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
-                "Port": 8888
+                "Port": 8888,
+                "MTU": 0,
+                "Linger": 0,
+                "KeepAlive": false,
+                "KeepAlivePeriod": 0,
+                "ReadBuffer": 0,
+                "WriteBuffer": 0,
+                "ReadTimeout": 0,
+                "WriteTimeout": 0
             },
             {
                 "Area": 1,
                 "Type": 2,
                 "ID": 1,
                 "Name": "CubeTcpClient",
+                "IsClient": true,
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
-                "Port": 8888
+                "Port": 8888,
+                "MTU": 0,
+                "Linger": 0,
+                "KeepAlive": false,
+                "KeepAlivePeriod": 0,
+                "ReadBuffer": 0,
+                "WriteBuffer": 0,
+                "ReadTimeout": 0,
+                "WriteTimeout": 0
             }
         ]
     }

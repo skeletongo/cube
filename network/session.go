@@ -3,6 +3,7 @@ package network
 import (
 	"io"
 	"net"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -12,6 +13,8 @@ import (
 type Conn interface {
 	LocalAddr() net.Addr
 	RemoteAddr() net.Addr
+	SetReadDeadline(t time.Time) error
+	SetWriteDeadline(t time.Time) error
 	io.ReadWriteCloser
 }
 
@@ -101,11 +104,17 @@ func (s *Session) Send(msgID uint16, msg interface{}) {
 
 // send goroutine
 func (s *Session) sendMsg() {
+	var zero time.Time
 	for v := range s.send {
 		if v == nil {
 			break
 		}
-		if err := s.pkgParser.Encode(s.conn, v.data); err != nil {
+		if s.SC.WriteTimeout > 0 {
+			s.conn.SetWriteDeadline(time.Now().Add(s.SC.WriteTimeout))
+		}
+		err := s.pkgParser.Encode(s.conn, v.data)
+		s.conn.SetWriteDeadline(zero)
+		if err != nil {
 			log.Warningf("packet encode error: %v", err)
 			break
 		}
@@ -116,8 +125,13 @@ func (s *Session) sendMsg() {
 
 // read goroutine
 func (s *Session) readMsg() {
+	var zero time.Time
 	for {
+		if s.SC.ReadTimeout > 0 {
+			s.conn.SetReadDeadline(time.Now().Add(s.SC.ReadTimeout))
+		}
 		data, err := s.pkgParser.Decode(s.conn)
+		s.conn.SetReadDeadline(zero)
 		if err != nil {
 			log.Warningf("packet decode error: %v", err)
 			break
