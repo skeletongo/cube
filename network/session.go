@@ -1,22 +1,11 @@
 package network
 
 import (
-	"io"
 	"net"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 )
-
-// Conn 连接
-// tcp,udp,websocket等
-type Conn interface {
-	LocalAddr() net.Addr
-	RemoteAddr() net.Addr
-	SetReadDeadline(t time.Time) error
-	SetWriteDeadline(t time.Time) error
-	io.ReadWriteCloser
-}
 
 type sendPack struct {
 	data [][]byte
@@ -145,6 +134,22 @@ func (s *Session) readMsg() {
 	s.Close()
 }
 
+// goroutine safe
+func (s *Session) Close() {
+	select {
+	case <-s.closeSign:
+		return
+	default:
+		close(s.closeSign)
+	}
+	s.conn.Close()
+
+	select {
+	case s.send <- nil:
+	default:
+	}
+}
+
 func (s *Session) Do() {
 	for i := 0; i < s.SC.MaxRecv; i++ {
 		select {
@@ -166,21 +171,5 @@ func (s *Session) Do() {
 		default:
 			return
 		}
-	}
-}
-
-// goroutine safe
-func (s *Session) Close() {
-	select {
-	case <-s.closeSign:
-		return
-	default:
-		close(s.closeSign)
-	}
-	s.conn.Close()
-
-	select {
-	case s.send <- nil:
-	default:
 	}
 }
