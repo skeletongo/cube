@@ -68,6 +68,9 @@ func (m *MsgParser) unmarshal(data []byte) (id, et uint16, err error) {
 func (m *MsgParser) Unmarshal(data []byte) (msgID uint16, msg interface{}, err error) {
 	var et uint16
 	msgID, et, err = m.unmarshal(data)
+	if err != nil {
+		return 0, nil, err
+	}
 	msg = CreateMessage(msgID)
 	if msg == nil {
 		return 0, nil, NewErrParsePacket(et, msgID, fmt.Errorf("MsgID:%d unregiste", msgID))
