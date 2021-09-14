@@ -13,6 +13,12 @@ func SetEndian(endian binary.ByteOrder) {
 	defaultEndian = endian
 }
 
+var defaultEncodeType = TypeGob
+
+func SetDefaultEncodeType(n int) {
+	defaultEncodeType = n
+}
+
 // EncDecoder 应用层数据序列化方式
 type EncDecoder interface {
 	// Unmarshal 反序列化
@@ -46,6 +52,6 @@ func TypeTest(msg interface{}) int {
 	case []byte:
 		return TypeBinary
 	default:
-		return TypeGob
+		return defaultEncodeType
 	}
 }

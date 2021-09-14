@@ -2,6 +2,7 @@ package module
 
 import (
 	"container/list"
+	"fmt"
 	"strings"
 	"time"
 
@@ -35,12 +36,12 @@ type module struct {
 }
 
 func (m *module) safeInit() {
-	defer utils.DumpStackIfPanic()
+	defer utils.RecoverPanicFunc(fmt.Sprintf("module(%v) safeInit", m.mi.Name()))
 	m.mi.Init()
 }
 
 func (m *module) safeUpdate(t time.Time) {
-	defer utils.DumpStackIfPanic()
+	defer utils.RecoverPanicFunc(fmt.Sprintf("module(%v) safeUpdate", m.mi.Name()))
 	if m.interval == 0 || t.Sub(m.lastTime) >= m.interval {
 		m.lastTime = t
 		m.mi.Update()
@@ -48,7 +49,7 @@ func (m *module) safeUpdate(t time.Time) {
 }
 
 func (m *module) safeClose() {
-	defer utils.DumpStackIfPanic()
+	defer utils.RecoverPanicFunc(fmt.Sprintf("module(%v) safeClose", m.mi.Name()))
 	m.mi.Close()
 }
 

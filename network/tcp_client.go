@@ -137,9 +137,7 @@ func (t *TCPClient) Update() {
 				s.readMsg()
 				t.sessionCh <- s
 			}()
-			if TestTCPClientSession == nil {
-				TestTCPClientSession = s
-			}
+			TestTCPClientSession = s
 
 		default:
 			for s := range t.sessions {

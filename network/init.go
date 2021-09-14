@@ -16,6 +16,8 @@ type Configuration struct {
 	Services []*ServiceConfig
 	// Endian 字节序，默认为小端序，true表示大端序
 	Endian bool
+	// IsJson 修改默认编码方式为json,否则是encoding/gob
+	IsJson bool
 }
 
 func (c *Configuration) Name() string {
@@ -23,15 +25,18 @@ func (c *Configuration) Name() string {
 }
 
 func (c *Configuration) Init() error {
+	for i := 0; i < len(c.Services); i++ {
+		c.Services[i].Init()
+	}
+
 	if c.Endian {
 		encoding.SetEndian(binary.BigEndian)
 		gMsgParser.SetByteOrder(binary.BigEndian)
 		gPkgParser.SetByteOrder(binary.BigEndian)
 	}
 
-	// 网络服务配置初始化
-	for i := 0; i < len(c.Services); i++ {
-		c.Services[i].Init()
+	if c.IsJson {
+		encoding.SetDefaultEncodeType(encoding.TypeJson)
 	}
 
 	// 启动网络服务

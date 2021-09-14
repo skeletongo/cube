@@ -128,9 +128,7 @@ func (t *TCPServer) Update() {
 				s.readMsg()
 				t.sessionCh <- s
 			}()
-			if TestTCPServerSession == nil {
-				TestTCPServerSession = s
-			}
+			TestTCPServerSession = s
 
 		default:
 			for v := range t.sessions {
