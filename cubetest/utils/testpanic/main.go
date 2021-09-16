@@ -3,8 +3,10 @@ package main
 import (
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"github.com/skeletongo/cube"
 	"github.com/skeletongo/cube/module"
+	"github.com/skeletongo/cube/utils"
 )
 
 type myModule struct {
@@ -19,6 +21,7 @@ func (m *myModule) Init() {
 }
 
 func (m *myModule) Update() {
+	logrus.Error("eeeeeeeeeeeeeeeee")
 	panic("my module panic")
 }
 
@@ -28,6 +31,7 @@ func (m *myModule) Close() {
 }
 
 func main() {
+	logrus.AddHook(&utils.FileLineHook{LogLevels: []logrus.Level{logrus.ErrorLevel}, Skip: 8})
 	module.Register(new(myModule), time.Second*5, 0)
 	cube.Run("config.json")
 }
