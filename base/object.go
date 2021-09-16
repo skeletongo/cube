@@ -8,7 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/skeletongo/cube/container/queue"
-	"github.com/skeletongo/cube/utils"
+	"github.com/skeletongo/cube/tools"
 )
 
 // Object 节点,一个功能模块，一个协程
@@ -131,7 +131,7 @@ func (o *Object) canStop() bool {
 }
 
 func (o *Object) safeDone(cmd Command) {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("object(%v) safeDone", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeDone", o.Name))
 
 	defer func() { atomic.AddUint64(&o.doneNum, 1) }()
 
@@ -141,7 +141,7 @@ func (o *Object) safeDone(cmd Command) {
 }
 
 func (o *Object) safeStart() {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("object(%v) safeStart", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeStart", o.Name))
 
 	if o.sinker != nil {
 		o.sinker.OnStart()
@@ -149,7 +149,7 @@ func (o *Object) safeStart() {
 }
 
 func (o *Object) safeTick() {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("object(%v) safeTick", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeTick", o.Name))
 
 	if o.sinker != nil {
 		o.sinker.OnTick()
@@ -157,7 +157,7 @@ func (o *Object) safeTick() {
 }
 
 func (o *Object) safeStop() {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("object(%v) safeStop", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeStop", o.Name))
 
 	if o.sinker != nil {
 		o.sinker.OnStop()

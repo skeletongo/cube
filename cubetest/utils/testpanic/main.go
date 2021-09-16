@@ -6,7 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/skeletongo/cube"
 	"github.com/skeletongo/cube/module"
-	"github.com/skeletongo/cube/utils"
+	"github.com/skeletongo/cube/tools"
 )
 
 type myModule struct {
@@ -31,7 +31,7 @@ func (m *myModule) Close() {
 }
 
 func main() {
-	logrus.AddHook(utils.NewFileLineHook(logrus.ErrorLevel))
+	logrus.AddHook(tools.NewFileLineHook(logrus.ErrorLevel))
 	module.Register(new(myModule), time.Second*5, 0)
 	cube.Run("config.json")
 }

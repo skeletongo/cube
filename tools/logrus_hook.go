@@ -1,4 +1,4 @@
-package utils
+package tools
 
 import (
 	"fmt"
@@ -29,6 +29,8 @@ func (e *FileLineHook) Fire(entry *logrus.Entry) error {
 	return nil
 }
 
+// NewFileLineHook 打印文件路径及行号
+// levels 指定日志级别
 func NewFileLineHook(levels ...logrus.Level) logrus.Hook {
 	return &FileLineHook{
 		LogLevels: levels,

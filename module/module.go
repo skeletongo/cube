@@ -9,7 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/skeletongo/cube/base"
-	"github.com/skeletongo/cube/utils"
+	"github.com/skeletongo/cube/tools"
 )
 
 // Module 扩展模块，实现自己的功能
@@ -36,12 +36,12 @@ type module struct {
 }
 
 func (m *module) safeInit() {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("module(%v) safeInit", m.mi.Name()))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeInit", m.mi.Name()))
 	m.mi.Init()
 }
 
 func (m *module) safeUpdate(t time.Time) {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("module(%v) safeUpdate", m.mi.Name()))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeUpdate", m.mi.Name()))
 	if m.interval == 0 || t.Sub(m.lastTime) >= m.interval {
 		m.lastTime = t
 		m.mi.Update()
@@ -49,7 +49,7 @@ func (m *module) safeUpdate(t time.Time) {
 }
 
 func (m *module) safeClose() {
-	defer utils.RecoverPanicFunc(fmt.Sprintf("module(%v) safeClose", m.mi.Name()))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeClose", m.mi.Name()))
 	m.mi.Close()
 }
 
