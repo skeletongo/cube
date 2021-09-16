@@ -31,7 +31,7 @@ func (m *myModule) Close() {
 }
 
 func main() {
-	logrus.AddHook(&utils.FileLineHook{LogLevels: []logrus.Level{logrus.ErrorLevel}, Skip: 8})
+	logrus.AddHook(utils.NewFileLineHook(logrus.ErrorLevel))
 	module.Register(new(myModule), time.Second*5, 0)
 	cube.Run("config.json")
 }
