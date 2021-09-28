@@ -1,7 +1,6 @@
 package network_test
 
 import (
-	"bytes"
 	"fmt"
 	"testing"
 
@@ -29,7 +28,7 @@ func TestMarshal(t *testing.T) {
 		return
 	}
 
-	id, msg, err := gMsgParser.Unmarshal(bytes.Join(data, nil))
+	id, msg, err := gMsgParser.Unmarshal(data)
 	t.Logf("msgID:%v Msg:%v Err:%v\n", id, *msg.(*D), err)
 }
 
@@ -44,6 +43,6 @@ func TestMarshalNoMsgID(t *testing.T) {
 	}
 
 	msg := new(D)
-	err = gMsgParser.UnmarshalNoMsgID(bytes.Join(data, nil), msg)
+	err = gMsgParser.UnmarshalNoMsgID(data, msg)
 	fmt.Printf("Msg:%v Err:%v\n", msg, err)
 }

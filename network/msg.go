@@ -40,17 +40,18 @@ func (m *MsgParser) SetByteOrder(order binary.ByteOrder) {
 // Marshal 消息序列化
 // msgID 消息号
 // msg 消息数据
-func (m *MsgParser) Marshal(msgID uint16, msg interface{}) ([][]byte, error) {
+func (m *MsgParser) Marshal(msgID uint16, msg interface{}) ([]byte, error) {
 	et := encoding.TypeTest(msg)
 	data, err := encoding.Encoding[et].Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
 
-	head := make([]byte, 4)
-	m.endian.PutUint16(head, uint16(et))
-	m.endian.PutUint16(head[2:], msgID)
-	return [][]byte{head, data}, err
+	bytes := make([]byte, 4+len(data))
+	m.endian.PutUint16(bytes, uint16(et))
+	m.endian.PutUint16(bytes[2:], msgID)
+	copy(bytes[4:], data)
+	return bytes, err
 }
 
 func (m *MsgParser) unmarshal(data []byte) (id, et uint16, err error) {
@@ -78,7 +79,7 @@ func (m *MsgParser) Unmarshal(data []byte) (msgID uint16, msg interface{}, err e
 	return msgID, msg, encoding.Encoding[et].Unmarshal(data[4:], msg)
 }
 
-func (m *MsgParser) MarshalNoMsgID(msg interface{}) (data [][]byte, err error) {
+func (m *MsgParser) MarshalNoMsgID(msg interface{}) (data []byte, err error) {
 	return m.Marshal(0, msg)
 }
 

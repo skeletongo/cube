@@ -1,4 +1,9 @@
 {
+    "Endian": false,
+    "IsJson": false,
+    "LenMsgLen": 2,
+    "MinMsgLen": 1,
+    "MaxMsgLen": 4096,
     "module": {
         "Options": {
             "Interval": 100
@@ -27,12 +32,11 @@
                 "Port": 8888,
                 "IsClient": true,
                 "ClientNum": 1,
-                "MTU": 0,
                 "Linger": 0,
                 "KeepAlive": false,
                 "KeepAlivePeriod": 0,
-                "ReadBuffer": 0,
-                "WriteBuffer": 0,
+                "ReadBufferSize": 0,
+                "WriteBufferSize": 0,
                 "ReadTimeout": 0,
                 "WriteTimeout": 0
             }

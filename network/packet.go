@@ -1,7 +1,6 @@
 package network
 
 import (
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -16,7 +15,7 @@ import (
 // len 业务数据字节长度（本身占用1或2或4个字节存储）
 
 type PkgParser struct {
-	lenMsgLen int              // data数据的字节个数用几个字节存储
+	lenMsgLen uint32           // data数据的字节个数用几个字节存储
 	minMsgLen uint32           // data数据最少字节个数
 	maxMsgLen uint32           // data数据最长字节个数
 	endian    binary.ByteOrder // 字节序
@@ -33,7 +32,7 @@ func NewPkgParser() *PkgParser {
 
 var gPkgParser = NewPkgParser()
 
-func (p *PkgParser) SetMsgLen(lenMsgLen int, minMsgLen uint32, maxMsgLen uint32) {
+func (p *PkgParser) SetMsgLen(lenMsgLen uint32, minMsgLen uint32, maxMsgLen uint32) (uint32, uint32, uint32) {
 	if lenMsgLen == 1 || lenMsgLen == 2 || lenMsgLen == 4 {
 		p.lenMsgLen = lenMsgLen
 	}
@@ -59,50 +58,70 @@ func (p *PkgParser) SetMsgLen(lenMsgLen int, minMsgLen uint32, maxMsgLen uint32)
 	if p.maxMsgLen > max {
 		p.maxMsgLen = max
 	}
+	return p.lenMsgLen, p.minMsgLen, p.maxMsgLen
 }
 
 func (p *PkgParser) SetByteOrder(order binary.ByteOrder) {
 	p.endian = order
 }
 
-func (p *PkgParser) Encode(w io.Writer, args [][]byte) (err error) {
-	var msgLen uint32
-	for i := 0; i < len(args); i++ {
-		msgLen += uint32(len(args[i]))
-	}
-
+func (p *PkgParser) Encode(b []byte) (data []byte, err error) {
+	var msgLen = uint32(len(b))
 	if msgLen > p.maxMsgLen {
-		return errors.New("message too long")
+		return nil, errors.New("message too long")
 	}
 	if msgLen < p.minMsgLen {
-		return errors.New("message too short")
+		return nil, errors.New("message too short")
 	}
-
-	var head []byte
+	data = make([]byte, int(p.lenMsgLen+msgLen))
 	switch p.lenMsgLen {
 	case 1:
-		head = []byte{byte(msgLen)}
+		data[0] = byte(msgLen)
 	case 2:
-		head = make([]byte, 2)
-		p.endian.PutUint16(head, uint16(msgLen))
+		p.endian.PutUint16(data, uint16(msgLen))
 	case 4:
-		head = make([]byte, 4)
-		p.endian.PutUint32(head, msgLen)
+		p.endian.PutUint32(data, msgLen)
 	}
-
-	readers := make([]io.Reader, 0, len(args)+1)
-	readers = append(readers, bytes.NewReader(head))
-	for i := 0; i < len(args); i++ {
-		readers = append(readers, bytes.NewReader(args[i]))
-	}
-	_, err = io.Copy(w, io.MultiReader(readers...))
+	copy(data[p.lenMsgLen:], b)
 	return
 }
 
-func (p *PkgParser) Decode(r io.Reader) (data []byte, err error) {
-	var b [4]byte
-	bufMsgLen := b[:p.lenMsgLen]
+func (p *PkgParser) EncodeByIOWriter(w io.Writer, b []byte) (err error) {
+	var data []byte
+	data, err = p.Encode(b)
+	if err != nil {
+		return
+	}
+	_, err = w.Write(data)
+	return
+}
 
+func (p *PkgParser) Decode(b []byte) (data []byte, err error) {
+	if len(b) < int(p.lenMsgLen+p.minMsgLen) {
+		return nil, errors.New("message too short")
+	}
+
+	var msgLen uint32
+	switch p.lenMsgLen {
+	case 1:
+		msgLen = uint32(b[0])
+	case 2:
+		msgLen = uint32(p.endian.Uint16(b))
+	case 4:
+		msgLen = p.endian.Uint32(b)
+	}
+
+	if msgLen > p.maxMsgLen {
+		return nil, errors.New("message too long")
+	}
+	if msgLen < p.minMsgLen {
+		return nil, errors.New("message too short")
+	}
+	return b[p.lenMsgLen:], nil
+}
+
+func (p *PkgParser) DecodeByIOReader(r io.Reader) (b []byte, err error) {
+	bufMsgLen := make([]byte, p.lenMsgLen)
 	if _, err := io.ReadFull(r, bufMsgLen); err != nil {
 		return nil, err
 	}
@@ -124,7 +143,7 @@ func (p *PkgParser) Decode(r io.Reader) (data []byte, err error) {
 		return nil, errors.New("message too short")
 	}
 
-	data = make([]byte, msgLen)
-	_, err = io.ReadFull(r, data)
+	b = make([]byte, msgLen)
+	_, err = io.ReadFull(r, b)
 	return
 }

@@ -5,31 +5,35 @@ import (
 	"time"
 )
 
-type ServerKey struct {
-	Area int    // 地区
-	Type int    // 类型
-	ID   int    // ID
+type ServerInfo struct {
+	Area uint8  // 地区
+	Type uint8  // 类型
+	ID   uint16 // ID
 	Name string // 名称
 }
 
-func (s *ServerKey) String() string {
+func (s *ServerInfo) String() string {
 	return fmt.Sprintf("Area:%v Type:%v ID:%v Name:%v", s.Area, s.Type, s.ID, s.Name)
 }
 
-const (
-	AreaBits = 1<<8 - 1
-	TypeBits = 1<<8 - 1
-	IDBits   = 1<<16 - 1
-)
-
-func (s *ServerKey) GetIndex() int {
+func (s *ServerInfo) Key() ServerKey {
 	// 由低位到高位依次 ID(16位) Type(8位)  Area(8位)
-	return (s.Area&AreaBits)<<24 | (s.Type&TypeBits)<<16 | s.ID&IDBits
+	key := uint32(0)
+	key |= uint32(s.ID)
+	key |= uint32(s.Area) << 16
+	key |= uint32(s.Type) << 24
+	return ServerKey(key)
+}
+
+type ServerKey uint32
+
+func (s ServerKey) Parse() (areaId, typeId uint8, id uint16) {
+	return uint8(s >> 24), uint8(s >> 16), uint16(s)
 }
 
 // ServiceConfig 服务配置
 type ServiceConfig struct {
-	ServerKey
+	ServerInfo
 	AuthKey    string // 秘钥
 	CertFile   string // 证书文件地址
 	KeyFile    string //
@@ -50,15 +54,16 @@ type ServiceConfig struct {
 	Linger          int           // 控制连接断开时的行为，连接断开后是否立刻丢弃还没有发送的缓存数据，单位秒
 	KeepAlive       bool          // 是否启用心跳功能
 	KeepAlivePeriod time.Duration // 开启心跳功能后的发送消息的时间间隔,单位秒
-	ReadBuffer      int           // 接收数据缓冲区大小,单位字节
-	WriteBuffer     int           // 发送数据缓冲区大小,单位字节
+	ReadBufferSize  int           // 接收数据缓冲区大小,单位字节
+	WriteBufferSize int           // 发送数据缓冲区大小,单位字节
 	ReadTimeout     time.Duration // 读取数据超时时长,单位秒
 	WriteTimeout    time.Duration // 写入数据超时时长,单位秒
+	HTTPTimeout     time.Duration // websocket
 
-	seq int
+	seq uint32
 }
 
-func (sc *ServiceConfig) GetSeq() int {
+func (sc *ServiceConfig) GetSeq() uint32 {
 	sc.seq++
 	return sc.seq
 }
@@ -90,9 +95,14 @@ func (sc *ServiceConfig) Init() {
 	if sc.WriteTimeout > 0 {
 		sc.WriteTimeout *= time.Second
 	}
+	if sc.HTTPTimeout <= 10 {
+		sc.HTTPTimeout = 10 * time.Second
+	} else {
+		sc.HTTPTimeout *= time.Second
+	}
 }
 
 func (sc *ServiceConfig) String() string {
 	return fmt.Sprintf("%s IsClient:%v Protocol:%v IP:%v Port:%v",
-		sc.ServerKey.String(), sc.IsClient, sc.Protocol, sc.Ip, sc.Port)
+		sc.ServerInfo.String(), sc.IsClient, sc.Protocol, sc.Ip, sc.Port)
 }

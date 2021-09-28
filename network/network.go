@@ -22,14 +22,14 @@ type IService interface {
 
 // Network 网络服务管理器
 type Network struct {
-	service  map[int]IService
+	service  map[ServerKey]IService
 	configCh chan *ServiceConfig
 	close    bool
 }
 
 func NewNetwork() *Network {
 	return &Network{
-		service:  make(map[int]IService, Capacity),
+		service:  make(map[ServerKey]IService, Capacity),
 		configCh: make(chan *ServiceConfig, Capacity),
 	}
 }
@@ -49,7 +49,7 @@ func (n *Network) newService(config *ServiceConfig) IService {
 	if config.IsClient {
 		switch config.Protocol {
 		case "ws", "wss":
-
+			s = NewWSClient(n, config)
 		case "udp":
 
 		default:
@@ -58,7 +58,7 @@ func (n *Network) newService(config *ServiceConfig) IService {
 	} else {
 		switch config.Protocol {
 		case "ws", "wss":
-
+			s = NewWSServer(n, config)
 		case "udp":
 
 		default:
@@ -71,10 +71,10 @@ func (n *Network) newService(config *ServiceConfig) IService {
 	}
 
 	if err := s.Start(); err != nil {
-		log.WithField("service", config.ServerKey.String()).Errorf("network service start error: %v", err)
+		log.WithField("service", config.ServerInfo.String()).Errorf("network service start error: %v", err)
 		return nil
 	}
-	n.service[config.GetIndex()] = s
+	n.service[config.Key()] = s
 	return s
 }
 
@@ -87,7 +87,7 @@ func (n *Network) Init() {
 func (n *Network) Update() {
 	select {
 	case config := <-n.configCh:
-		_, ok := n.service[config.GetIndex()]
+		_, ok := n.service[config.Key()]
 		if !n.close && !ok {
 			n.newService(config)
 		}
@@ -116,7 +116,7 @@ func (n *Network) Close() {
 }
 
 func (n *Network) ServiceClosed(config *ServiceConfig) {
-	delete(n.service, config.GetIndex())
+	delete(n.service, config.Key())
 	if !n.close {
 		time.AfterFunc(TimeRestart, func() {
 			n.NewService(config)

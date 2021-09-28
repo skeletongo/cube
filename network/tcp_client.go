@@ -8,8 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var TestTCPClientSession *Session
-
 type TCPClient struct {
 	network   *Network
 	SC        *ServiceConfig
@@ -104,40 +102,46 @@ func (t *TCPClient) Update() {
 			}
 
 		case <-t.closeSign:
-			if !t.close {
-				t.close = true
-				for v := range t.sessions {
-					v.Close()
-				}
-				for {
-					select {
-					case conn := <-t.connCh:
-						conn.Close()
-					default:
-						if len(t.sessions) == 0 {
-							t.network.ServiceClosed(t.SC)
-						}
+			t.closeSign = make(chan struct{})
+			t.close = true
+			for v := range t.sessions {
+				v.Close()
+			}
+		here:
+			for {
+				select {
+				case conn := <-t.connCh:
+					conn.Close()
+				default:
+					if len(t.sessions) == 0 {
+						t.network.ServiceClosed(t.SC)
 						return
 					}
+					break here
 				}
 			}
-			return
 
 		case conn := <-t.connCh:
-			tcpConn, err := NewTCPConn(conn, t.SC)
+			var err error
+			s := NewSession(t.SC)
+			s.Agent, err = NewTCPSession(s, conn)
 			if err != nil {
-				log.WithField("service", t.SC).Error("NewTCPConn error:", err)
+				log.WithField("service", t.SC).Error("NewTCPSession error:", err)
 				conn.Close()
 				continue
 			}
-			s := NewSession(t.SC, tcpConn)
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
 				s.readMsg()
 				t.sessionCh <- s
 			}()
-			TestTCPClientSession = s
+			// test
+			//type Ping struct {
+			//	Data string
+			//}
+			//s.Send(1, &Ping{Data: "ping"})
+			// test
 
 		default:
 			for s := range t.sessions {

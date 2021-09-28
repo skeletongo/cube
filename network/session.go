@@ -2,17 +2,32 @@ package network
 
 import (
 	"net"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
 
+type Agent interface {
+	LocalAddr() net.Addr
+	RemoteAddr() net.Addr
+	SendMsg()
+	ReadMsg()
+	Close() error
+}
+
 type sendPack struct {
-	data [][]byte
+	data []byte
 }
 
 type recvPack struct {
 	data []byte
+}
+
+type SessionKey uint64
+
+func (s SessionKey) Parse() (areaId, typeId uint8, id uint16, sessionId uint32) {
+	sessionId = uint32(s)
+	areaId, typeId, id = ServerKey(s >> 32).Parse()
+	return
 }
 
 // Session 连接会话
@@ -21,18 +36,18 @@ type recvPack struct {
 // 2.将序列化数据分包发送或接收
 //todo 3.中间件
 type Session struct {
-	ID        int
+	ID        uint32
 	SC        *ServiceConfig
+	Agent     Agent
 	userData  map[interface{}]interface{}
 	send      chan *sendPack // 消息发送队列
 	recv      chan *recvPack // 消息接收队列
 	closeSign chan struct{}
 	pkgParser *PkgParser // 序列化数据分包发送或接收
 	msgParser *MsgParser // 应用层消息序列化与反序列化
-	conn      Conn
 }
 
-func NewSession(config *ServiceConfig, conn Conn) *Session {
+func NewSession(config *ServiceConfig) *Session {
 	s := &Session{
 		ID:        config.GetSeq(),
 		SC:        config,
@@ -42,17 +57,24 @@ func NewSession(config *ServiceConfig, conn Conn) *Session {
 		closeSign: make(chan struct{}),
 		pkgParser: gPkgParser,
 		msgParser: gMsgParser,
-		conn:      conn,
 	}
 	return s
 }
 
+func (s *Session) Key() SessionKey {
+	// 由低位到高位依次 SessionID(32位) ID(16位) Type(8位)  Area(8位)
+	key := uint64(0)
+	key |= uint64(s.SC.Key()) << 32
+	key |= uint64(s.ID)
+	return SessionKey(key)
+}
+
 func (s *Session) LocalAddr() net.Addr {
-	return s.conn.LocalAddr()
+	return s.Agent.LocalAddr()
 }
 
 func (s *Session) RemoteAddr() net.Addr {
-	return s.conn.RemoteAddr()
+	return s.Agent.RemoteAddr()
 }
 
 func (s *Session) SetData(key, value interface{}) {
@@ -91,63 +113,12 @@ func (s *Session) Send(msgID uint16, msg interface{}) {
 	}
 }
 
-// send goroutine
 func (s *Session) sendMsg() {
-	var zero time.Time
-	for v := range s.send {
-		if v == nil {
-			break
-		}
-		if s.SC.WriteTimeout > 0 {
-			s.conn.SetWriteDeadline(time.Now().Add(s.SC.WriteTimeout))
-		}
-		err := s.pkgParser.Encode(s.conn, v.data)
-		s.conn.SetWriteDeadline(zero)
-		if err != nil {
-			log.Warningf("packet encode error: %v", err)
-			break
-		}
-	}
-
-	s.Close()
+	s.Agent.SendMsg()
 }
 
-// read goroutine
 func (s *Session) readMsg() {
-	var zero time.Time
-	for {
-		if s.SC.ReadTimeout > 0 {
-			s.conn.SetReadDeadline(time.Now().Add(s.SC.ReadTimeout))
-		}
-		data, err := s.pkgParser.Decode(s.conn)
-		s.conn.SetReadDeadline(zero)
-		if err != nil {
-			log.Warningf("packet decode error: %v", err)
-			break
-		}
-		r := &recvPack{
-			data: data,
-		}
-		s.recv <- r
-	}
-
-	s.Close()
-}
-
-// goroutine safe
-func (s *Session) Close() {
-	select {
-	case <-s.closeSign:
-		return
-	default:
-		close(s.closeSign)
-	}
-	s.conn.Close()
-
-	select {
-	case s.send <- nil:
-	default:
-	}
+	s.Agent.ReadMsg()
 }
 
 func (s *Session) Do() {
@@ -172,4 +143,21 @@ func (s *Session) Do() {
 			return
 		}
 	}
+}
+
+func (s *Session) Close() error {
+	select {
+	case <-s.closeSign:
+		return nil
+	default:
+		close(s.closeSign)
+	}
+
+	err := s.Agent.Close()
+
+	select {
+	case s.send <- nil:
+	default:
+	}
+	return err
 }

@@ -8,8 +8,6 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var TestTCPServerSession *Session
-
 type TCPServer struct {
 	network   *Network
 	SC        *ServiceConfig
@@ -89,46 +87,46 @@ func (t *TCPServer) Update() {
 			}
 
 		case <-t.closeSign:
-			if !t.close {
-				t.close = true
-				for v := range t.sessions {
-					v.Close()
-				}
-				for {
-					select {
-					case conn := <-t.connCh:
-						conn.Close()
-					default:
-						if len(t.sessions) == 0 {
-							t.network.ServiceClosed(t.SC)
-						}
+			t.closeSign = make(chan struct{})
+			t.close = true
+			for v := range t.sessions {
+				v.Close()
+			}
+		here:
+			for {
+				select {
+				case conn := <-t.connCh:
+					conn.Close()
+				default:
+					if len(t.sessions) == 0 {
+						t.network.ServiceClosed(t.SC)
 						return
 					}
+					break here
 				}
 			}
-			return
 
 		case conn := <-t.connCh:
 			if len(t.sessions) > t.SC.MaxConnNum {
-				conn.Close()
 				log.Warning("too many connections")
-				return
-			}
-
-			tcpConn, err := NewTCPConn(conn, t.SC)
-			if err != nil {
-				log.WithField("service", t.SC).Error("NewTCPConn error:", err)
 				conn.Close()
 				continue
 			}
-			s := NewSession(t.SC, tcpConn)
+
+			var err error
+			s := NewSession(t.SC)
+			s.Agent, err = NewTCPSession(s, conn)
+			if err != nil {
+				log.WithField("service", t.SC).Error("NewTCPSession error:", err)
+				conn.Close()
+				continue
+			}
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
 				s.readMsg()
 				t.sessionCh <- s
 			}()
-			TestTCPServerSession = s
 
 		default:
 			for v := range t.sessions {

@@ -1,4 +1,9 @@
 {
+    "Endian": false,
+    "IsJson": false,
+    "LenMsgLen": 2,
+    "MinMsgLen": 1,
+    "MaxMsgLen": 4096,
     "module": {
         "Options": {
             "Interval": 100
@@ -25,12 +30,28 @@
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
                 "Port": 8888,
-                "MTU": 0,
                 "Linger": 0,
                 "KeepAlive": false,
                 "KeepAlivePeriod": 0,
-                "ReadBuffer": 0,
-                "WriteBuffer": 0,
+                "ReadBufferSize": 0,
+                "WriteBufferSize": 0,
+                "ReadTimeout": 0,
+                "WriteTimeout": 0
+            },
+            {
+                "Area": 1,
+                "Type": 1,
+                "ID": 2,
+                "Name": "CubeWSServer",
+                "CertFile": "",
+                "KeyFile": "",
+                "Protocol": "ws",
+                "Ip": "127.0.0.1",
+                "Port": 8888,
+                "Path": "/",
+                "ReadBufferSize": 0,
+                "WriteBufferSize": 0,
+                "HTTPTimeout": 0,
                 "ReadTimeout": 0,
                 "WriteTimeout": 0
             },
@@ -43,12 +64,28 @@
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
                 "Port": 8888,
-                "MTU": 0,
                 "Linger": 0,
                 "KeepAlive": false,
                 "KeepAlivePeriod": 0,
-                "ReadBuffer": 0,
-                "WriteBuffer": 0,
+                "ReadBufferSize": 0,
+                "WriteBufferSize": 0,
+                "ReadTimeout": 0,
+                "WriteTimeout": 0
+            },
+            {
+                "Area": 1,
+                "Type": 2,
+                "ID": 2,
+                "Name": "CubeWSClient",
+                "IsClient": true,
+                "Protocol": "ws",
+                "Ip": "127.0.0.1",
+                "Port": 8888,
+                "Path": "/",
+                "ClientNum": 1,
+                "ReadBufferSize": 0,
+                "WriteBufferSize": 0,
+                "HTTPTimeout": 0,
                 "ReadTimeout": 0,
                 "WriteTimeout": 0
             }
