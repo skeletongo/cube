@@ -57,7 +57,7 @@ func (t *TCPServer) Start() error {
 					if max := 1 * time.Second; tempDelay > max {
 						tempDelay = max
 					}
-					log.Warning("accept error: %v; retrying in %v", err, tempDelay)
+					log.Warningf("accept error: %v; retrying in %v", err, tempDelay)
 					time.Sleep(tempDelay)
 					continue
 				}
@@ -117,7 +117,7 @@ func (t *TCPServer) Update() {
 			s := NewSession(t.SC)
 			s.Agent, err = NewTCPSession(s, conn)
 			if err != nil {
-				log.WithField("service", t.SC).Error("NewTCPSession error:", err)
+				log.WithField("service", t.SC).Errorf("NewTCPSession error: %v", err)
 				conn.Close()
 				continue
 			}

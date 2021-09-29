@@ -20,30 +20,48 @@ func NewWSSession(s *Session, conn *websocket.Conn) (*WSSession, error) {
 		Session: s,
 	}
 	conn.SetReadLimit(int64(Config.LenMsgLen + Config.MaxMsgLen))
+
+	var err error
+	c := conn.UnderlyingConn().(*net.TCPConn)
+	if s.SC.Linger > 0 {
+		if err = c.SetLinger(s.SC.Linger); err != nil {
+			return nil, err
+		}
+	}
 	return w, nil
 }
 
 func (w *WSSession) SendMsg() {
+	var err error
 	var zero time.Time
-	for v := range w.Session.send {
-		if v == nil {
-			break
+	var writer io.WriteCloser
+here:
+	for {
+		if writer != nil {
+			writer.Close()
+			writer = nil
 		}
 
-		data, err := w.Session.pkgParser.Encode(v.data)
-		if err != nil {
-			log.Warningf("packet Encode error: %v", err)
-			break
-		}
+		select {
+		case v := <-w.Session.send:
+			if v == nil {
+				break here
+			}
 
-		if w.Session.SC.WriteTimeout > 0 {
-			w.Conn.SetWriteDeadline(time.Now().Add(w.Session.SC.WriteTimeout))
-		}
-		err = w.WriteMessage(websocket.BinaryMessage, data)
-		w.Conn.SetWriteDeadline(zero)
-		if err != nil {
-			log.Warningf("websocket WriteMessage error: %v", err)
-			break
+			if writer, err = w.NextWriter(websocket.BinaryMessage); err != nil {
+				log.Warningf("websocket NextWriter error: %v", err)
+				break
+			}
+
+			if w.Session.SC.WriteTimeout > 0 {
+				w.Conn.SetWriteDeadline(time.Now().Add(w.Session.SC.WriteTimeout))
+			}
+			err = w.Session.pkgParser.EncodeByIOWriter(writer, v.data)
+			w.Conn.SetWriteDeadline(zero)
+			if err != nil {
+				log.Warningf("websocket WriteMessage error: %v", err)
+				break
+			}
 		}
 	}
 
@@ -80,6 +98,5 @@ func (w *WSSession) ReadMsg() {
 }
 
 func (w *WSSession) Close() error {
-	w.UnderlyingConn().(*net.TCPConn).SetLinger(0)
 	return w.Conn.Close()
 }

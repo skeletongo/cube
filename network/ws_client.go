@@ -132,7 +132,7 @@ func (w *WSClient) Update() {
 			s := NewSession(w.SC)
 			s.Agent, err = NewWSSession(s, conn)
 			if err != nil {
-				log.WithField("service", w.SC).Error("NewWSSession error:", err)
+				log.WithField("service", w.SC).Errorf("NewWSSession error: %v", err)
 				conn.Close()
 				continue
 			}

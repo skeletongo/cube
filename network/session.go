@@ -97,18 +97,18 @@ func (s *Session) DelData(key interface{}) {
 func (s *Session) Send(msgID uint16, msg interface{}) {
 	data, err := s.msgParser.Marshal(msgID, msg)
 	if err != nil {
-		log.WithField("msgID", msgID).Error("send message error: %v", err)
+		log.WithField("msgID", msgID).Errorf("send message error: %v", err)
 		return
 	}
 
 	select {
 	case <-s.closeSign:
-		log.WithField("msgID", msgID).Trace("session closed")
+		log.WithField("service", s.SC.String()).Trace("session closed")
 	case s.send <- &sendPack{
 		data: data,
 	}:
 	default:
-		log.WithField("msgID", msgID).Error("close conn: channel full")
+		log.WithField("service", s.SC.String()).Error("close conn: channel full")
 		s.Close()
 	}
 }

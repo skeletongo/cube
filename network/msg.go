@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bytes"
 	"encoding/binary"
 	"fmt"
 	"reflect"
@@ -47,11 +48,12 @@ func (m *MsgParser) Marshal(msgID uint16, msg interface{}) ([]byte, error) {
 		return nil, err
 	}
 
-	bytes := make([]byte, 4+len(data))
-	m.endian.PutUint16(bytes, uint16(et))
-	m.endian.PutUint16(bytes[2:], msgID)
-	copy(bytes[4:], data)
-	return bytes, err
+	bs := getBytesN(int(Config.LenMsgLen) + 4 + len(data))
+
+	m.endian.PutUint16(bs[Config.LenMsgLen:], uint16(et))
+	m.endian.PutUint16(bs[Config.LenMsgLen+2:], msgID)
+	copy(bs[Config.LenMsgLen+4:], data)
+	return bs, err
 }
 
 func (m *MsgParser) unmarshal(data []byte) (id, et uint16, err error) {
@@ -67,8 +69,10 @@ func (m *MsgParser) unmarshal(data []byte) (id, et uint16, err error) {
 // data 序列化数据
 // 返回消息号和解析后的消息数据
 func (m *MsgParser) Unmarshal(data []byte) (msgID uint16, msg interface{}, err error) {
+	defer putBuffer(bytes.NewBuffer(data))
+
 	var et uint16
-	msgID, et, err = m.unmarshal(data)
+	msgID, et, err = m.unmarshal(data[Config.LenMsgLen:])
 	if err != nil {
 		return 0, nil, err
 	}
@@ -76,7 +80,7 @@ func (m *MsgParser) Unmarshal(data []byte) (msgID uint16, msg interface{}, err e
 	if msg == nil {
 		return 0, nil, NewErrParsePacket(et, msgID, fmt.Errorf("MsgID:%d unregiste", msgID))
 	}
-	return msgID, msg, encoding.Encoding[et].Unmarshal(data[4:], msg)
+	return msgID, msg, encoding.Encoding[et].Unmarshal(data[Config.LenMsgLen+4:], msg)
 }
 
 func (m *MsgParser) MarshalNoMsgID(msg interface{}) (data []byte, err error) {
@@ -84,11 +88,13 @@ func (m *MsgParser) MarshalNoMsgID(msg interface{}) (data []byte, err error) {
 }
 
 func (m *MsgParser) UnmarshalNoMsgID(data []byte, msg interface{}) error {
-	_, et, err := m.unmarshal(data)
+	defer putBuffer(bytes.NewBuffer(data))
+
+	_, et, err := m.unmarshal(data[Config.LenMsgLen:])
 	if err != nil {
 		return err
 	}
-	return encoding.Encoding[et].Unmarshal(data[4:], msg)
+	return encoding.Encoding[et].Unmarshal(data[Config.LenMsgLen+4:], msg)
 }
 
 // ===============================

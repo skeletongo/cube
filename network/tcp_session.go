@@ -52,6 +52,7 @@ func (t *TCPSession) SendMsg() {
 		if v == nil {
 			break
 		}
+
 		if t.Session.SC.WriteTimeout > 0 {
 			t.Conn.SetWriteDeadline(time.Now().Add(t.Session.SC.WriteTimeout))
 		}
@@ -89,6 +90,5 @@ func (t *TCPSession) ReadMsg() {
 }
 
 func (t *TCPSession) Close() error {
-	t.Conn.(*net.TCPConn).SetLinger(0)
 	return t.Conn.Close()
 }

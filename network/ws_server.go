@@ -75,7 +75,7 @@ func (w *WSServer) Start() error {
 		config.Certificates = make([]tls.Certificate, 1)
 		config.Certificates[0], err = tls.LoadX509KeyPair(w.SC.CertFile, w.SC.KeyFile)
 		if err != nil {
-			log.WithField("service", w.SC).Error("tls error:%v", err)
+			log.WithField("service", w.SC).Errorf("tls error: %v", err)
 			return err
 		}
 
@@ -144,7 +144,7 @@ func (w *WSServer) Update() {
 			s := NewSession(w.SC)
 			s.Agent, err = NewWSSession(s, conn)
 			if err != nil {
-				log.WithField("service", w.SC).Error("NewWSSession error:", err)
+				log.WithField("service", w.SC).Errorf("NewWSSession error: %v", err)
 				conn.Close()
 				continue
 			}

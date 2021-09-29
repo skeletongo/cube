@@ -14,7 +14,7 @@ func (b *Binary) Unmarshal(buf []byte, data interface{}) error {
 }
 
 func (b *Binary) Marshal(data interface{}) ([]byte, error) {
-	writer := bytes.NewBuffer(nil)
-	err := binary.Write(writer, defaultEndian, data)
-	return writer.Bytes(), err
+	buffer := bytes.NewBuffer(nil)
+	err := binary.Write(buffer, defaultEndian, data)
+	return buffer.Bytes(), err
 }
