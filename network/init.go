@@ -12,8 +12,6 @@ import (
 var Config = new(Configuration)
 
 type Configuration struct {
-	// Services 网络服务配置
-	Services []*ServiceConfig
 	// Endian 字节序，默认为小端序，true表示大端序
 	Endian bool
 	// IsJson 修改默认编码方式为json,否则是encoding/gob
@@ -24,6 +22,8 @@ type Configuration struct {
 	MinMsgLen uint32
 	// MaxMsgLen 封包时应用层数据最大字节数
 	MaxMsgLen uint32
+	// Services 网络服务配置
+	Services []*ServiceConfig
 }
 
 func (c *Configuration) Name() string {

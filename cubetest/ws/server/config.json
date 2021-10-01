@@ -1,9 +1,4 @@
 {
-    "Endian": false,
-    "IsJson": false,
-    "LenMsgLen": 2,
-    "MinMsgLen": 1,
-    "MaxMsgLen": 4096,
     "module": {
         "Options": {
             "Interval": 100
@@ -21,6 +16,11 @@
         }
     },
     "network": {
+        "Endian": false,
+        "IsJson": false,
+        "LenMsgLen": 2,
+        "MinMsgLen": 1,
+        "MaxMsgLen": 4096,
         "Services": [
             {
                 "Area": 1,
@@ -31,7 +31,7 @@
                 "KeyFile": "",
                 "Protocol": "ws",
                 "Ip": "127.0.0.1",
-                "Port": 8888,
+                "Port": 8889,
                 "Path": "/",
                 "ReadBufferSize": 0,
                 "WriteBufferSize": 0,

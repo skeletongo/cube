@@ -9,6 +9,7 @@ import (
 	"github.com/skeletongo/cube/module"
 	"github.com/skeletongo/cube/network"
 	"github.com/skeletongo/cube/pkg"
+	"github.com/skeletongo/cube/statsviz"
 	"github.com/skeletongo/cube/task"
 	"github.com/skeletongo/cube/timer"
 )
@@ -20,6 +21,7 @@ func Run(config string) {
 	pkg.RegisterPackage(module.Config)
 	pkg.RegisterPackage(task.Config)
 	pkg.RegisterPackage(network.Config)
+	pkg.RegisterPackage(statsviz.Config)
 
 	// 读取配置文件，模块初始化
 	pkg.Load(config)
