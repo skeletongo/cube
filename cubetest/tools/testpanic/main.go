@@ -4,8 +4,9 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/skeletongo/cube"
+
 	"github.com/skeletongo/cube/module"
+	"github.com/skeletongo/cube/pkg"
 	"github.com/skeletongo/cube/tools"
 )
 
@@ -32,6 +33,10 @@ func (m *myModule) Close() {
 
 func main() {
 	logrus.AddHook(tools.NewFileLineHook(logrus.ErrorLevel))
+
+	pkg.RegisterPackage(module.Config)
 	module.Register(new(myModule), time.Second*5, 0)
-	cube.Run("config.json")
+	pkg.Load("config.json")
+	module.Start()
+	select {}
 }

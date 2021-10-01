@@ -1,0 +1,6 @@
+{
+    "statsviz": {
+        "IsOpen": true,
+        "Addr" : ":6060"
+    }
+}

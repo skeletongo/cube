@@ -1,23 +1,7 @@
 {
-    "Endian": false,
-    "IsJson": false,
-    "LenMsgLen": 2,
-    "MinMsgLen": 1,
-    "MaxMsgLen": 4096,
     "module": {
         "Options": {
             "Interval": 100
-        }
-    },
-    "task": {
-        "Options": {
-            "Interval": 0
-        },
-        "Worker": {
-            "Options": {
-                "Interval": 0
-            },
-            "WorkerCnt": 5
         }
     }
 }
