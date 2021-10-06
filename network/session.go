@@ -38,7 +38,7 @@ func (s SessionKey) Parse() (areaId, typeId uint8, id uint16, sessionId uint32) 
 type Session struct {
 	ID        uint32
 	SC        *ServiceConfig
-	Agent     Agent
+	agent     Agent
 	userData  map[interface{}]interface{}
 	send      chan *sendPack // 消息发送队列
 	recv      chan *recvPack // 消息接收队列
@@ -69,12 +69,16 @@ func (s *Session) Key() SessionKey {
 	return SessionKey(key)
 }
 
+func (s *Session) SetAgent(agent Agent) {
+	s.agent = agent
+}
+
 func (s *Session) LocalAddr() net.Addr {
-	return s.Agent.LocalAddr()
+	return s.agent.LocalAddr()
 }
 
 func (s *Session) RemoteAddr() net.Addr {
-	return s.Agent.RemoteAddr()
+	return s.agent.RemoteAddr()
 }
 
 func (s *Session) SetData(key, value interface{}) {
@@ -114,11 +118,11 @@ func (s *Session) Send(msgID uint16, msg interface{}) {
 }
 
 func (s *Session) sendMsg() {
-	s.Agent.SendMsg()
+	s.agent.SendMsg()
 }
 
 func (s *Session) readMsg() {
-	s.Agent.ReadMsg()
+	s.agent.ReadMsg()
 }
 
 func (s *Session) Do() {
@@ -153,7 +157,7 @@ func (s *Session) Close() error {
 		close(s.closeSign)
 	}
 
-	err := s.Agent.Close()
+	err := s.agent.Close()
 
 	select {
 	case s.send <- nil:

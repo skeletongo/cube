@@ -113,14 +113,14 @@ func (t *TCPServer) Update() {
 				continue
 			}
 
-			var err error
 			s := NewSession(t.SC)
-			s.Agent, err = NewTCPSession(s, conn)
+			agent, err := NewTCPSession(s, conn)
 			if err != nil {
 				log.WithField("service", t.SC).Errorf("NewTCPSession error: %v", err)
 				conn.Close()
 				continue
 			}
+			s.SetAgent(agent)
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {

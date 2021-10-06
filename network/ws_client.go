@@ -128,14 +128,14 @@ func (w *WSClient) Update() {
 			}
 
 		case conn := <-w.connCh:
-			var err error
 			s := NewSession(w.SC)
-			s.Agent, err = NewWSSession(s, conn)
+			agent, err := NewWSSession(s, conn)
 			if err != nil {
 				log.WithField("service", w.SC).Errorf("NewWSSession error: %v", err)
 				conn.Close()
 				continue
 			}
+			s.SetAgent(agent)
 			w.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {

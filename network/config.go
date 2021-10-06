@@ -52,13 +52,13 @@ type ServiceConfig struct {
 
 	MTU             int           // 网络传输最大数据包,单位字节
 	Linger          int           // 控制连接断开时的行为，连接断开后是否立刻丢弃还没有发送的缓存数据，单位秒
-	KeepAlive       bool          // 是否启用心跳功能
+	KeepAlive       bool          // 是否启用tcp心跳功能
 	KeepAlivePeriod time.Duration // 开启心跳功能后的发送消息的时间间隔,单位秒
 	ReadBufferSize  int           // 接收数据缓冲区大小,单位字节
 	WriteBufferSize int           // 发送数据缓冲区大小,单位字节
 	ReadTimeout     time.Duration // 读取数据超时时长,单位秒
 	WriteTimeout    time.Duration // 写入数据超时时长,单位秒
-	HTTPTimeout     time.Duration // websocket
+	HTTPTimeout     time.Duration // websocket 建立连接的超时时间,单位秒
 
 	seq uint32
 }

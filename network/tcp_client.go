@@ -122,14 +122,14 @@ func (t *TCPClient) Update() {
 			}
 
 		case conn := <-t.connCh:
-			var err error
 			s := NewSession(t.SC)
-			s.Agent, err = NewTCPSession(s, conn)
+			agent, err := NewTCPSession(s, conn)
 			if err != nil {
 				log.WithField("service", t.SC).Error("NewTCPSession error:", err)
 				conn.Close()
 				continue
 			}
+			s.SetAgent(agent)
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
