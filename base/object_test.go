@@ -1,32 +1,34 @@
-package base
+package base_test
 
 import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/skeletongo/cube/base"
 )
 
 func ExampleObject_Send() {
 	var n []int
-	obj := NewObject("test", &Options{Interval: 0}, nil)
+	obj := base.NewObject("test", &base.Options{Interval: 0}, nil)
 	obj.Run()
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		n = append(n, 1)
 		return nil
 	}))
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		fmt.Println(n)
 		return nil
 	}))
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		n = append(n, 2)
 		return nil
 	}))
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		n = append(n, 3)
 		return nil
 	}))
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		fmt.Println(n)
 		return nil
 	}))
@@ -55,12 +57,12 @@ func (r *runSinker) OnStop() {
 }
 
 func TestObject_Run(t *testing.T) {
-	obj := NewObject("test", &Options{Interval: 50}, new(runSinker))
+	obj := base.NewObject("test", &base.Options{Interval: 50}, new(runSinker))
 	obj.Run()
 
 	for i := 2; i < 6; i++ {
 		go func(n int) {
-			obj.Send(CommandWrapper(func(o *Object) error {
+			obj.Send(base.CommandWrapper(func(o *base.Object) error {
 				RunCh <- n
 				return nil
 			}))
@@ -69,7 +71,7 @@ func TestObject_Run(t *testing.T) {
 	time.Sleep(time.Millisecond * 10)
 	// 1 [2 3 4 5]
 
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		time.Sleep(time.Millisecond * 50)
 		return nil
 	}))
@@ -77,7 +79,7 @@ func TestObject_Run(t *testing.T) {
 
 	for i := 7; i < 9; i++ {
 		go func(n int) {
-			obj.Send(CommandWrapper(func(o *Object) error {
+			obj.Send(base.CommandWrapper(func(o *base.Object) error {
 				RunCh <- n
 				time.Sleep(time.Millisecond * 10)
 				return nil
@@ -87,7 +89,7 @@ func TestObject_Run(t *testing.T) {
 	time.Sleep(time.Millisecond * 100)
 	// 1 [2 3 4 5] 6 [7 8] 6
 
-	obj.Send(CommandWrapper(func(o *Object) error {
+	obj.Send(base.CommandWrapper(func(o *base.Object) error {
 		RunCh <- 9
 		return nil
 	}))

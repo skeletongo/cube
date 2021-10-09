@@ -6,9 +6,9 @@
 通过 logrus.StandardLogger() 获取三方库中默认的日志对象
 
 #### 代码说明  
-* object: 基础节点，包含一个消息队列，并在自己的协程中串行处理消息队列中的所有消息  
+* object: 基础节点，单线程模型，包含一个消息队列及定时器，在自己的线程中串行处理消息队列中的所有消息及定时任务  
 * module: 自定义功能模块  
-    * network: 网络服务 tcp,websocket  
+    * network: 提供网络服务，支持tcp,websocket，过滤器network.Filter，中间件network.Middle  
 * timer: 创建延迟函数及定时任务  
-* task: 创建任务，对多线程的支持  
-* worker: 相当于一个协程，处理Task任务  
+* task: 创建任务，对多线程的支持
+* statsviz: 查看程序运行时的工具库 https://github.com/arl/statsviz

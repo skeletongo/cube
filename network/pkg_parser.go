@@ -8,12 +8,16 @@ import (
 	"math"
 )
 
+// 应用层数据包解析器
+//
 // 封包结构
 // --------------
 // | len | data |
 // --------------
-// data 业务数据
-// len 业务数据字节长度（本身占用1或2或4个字节存储）
+// data 应用层数据包
+// len 数据包长度（本身占用1或2或4个字节存储）
+
+var gPkgParser = NewPkgParser()
 
 type PkgParser struct {
 	lenMsgLen uint32           // data数据的字节个数用几个字节存储
@@ -30,8 +34,6 @@ func NewPkgParser() *PkgParser {
 		endian:    binary.LittleEndian,
 	}
 }
-
-var gPkgParser = NewPkgParser()
 
 func (p *PkgParser) SetMsgLen(lenMsgLen uint32, minMsgLen uint32, maxMsgLen uint32) (uint32, uint32, uint32) {
 	if lenMsgLen == 1 || lenMsgLen == 2 || lenMsgLen == 4 {
@@ -85,9 +87,7 @@ func (p *PkgParser) Encode(b []byte) (data []byte, err error) {
 	return b, err
 }
 
-func (p *PkgParser) EncodeByIOWriter(w io.Writer, b []byte) (err error) {
-	defer putBuffer(bytes.NewBuffer(b))
-
+func (p *PkgParser) EncodeByWriter(w io.Writer, b []byte) (err error) {
 	var data []byte
 	data, err = p.Encode(b)
 	if err != nil {
@@ -121,7 +121,7 @@ func (p *PkgParser) Decode(b []byte) (data []byte, err error) {
 	return b, err
 }
 
-func (p *PkgParser) DecodeByIOReader(r io.Reader) (b []byte, err error) {
+func (p *PkgParser) DecodeByReader(r io.Reader) (b []byte, err error) {
 	bs := getBytesN(int(p.lenMsgLen))
 	defer func() {
 		if err != nil {

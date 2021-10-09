@@ -1,18 +1,34 @@
 package network
 
-import "fmt"
+import (
+	"fmt"
+)
 
-// ErrParserPacket 消息类型不支持或解析失败
-type ErrParserPacket struct {
-	EncodeType uint16 // 消息类型
-	MsgID      uint16 // 消息号
-	Err        error  // 错误信息
+type ErrorType int
+
+const (
+	ErrorTypeMsgID   ErrorType = iota // 未知的消息号
+	ErrorTypeEncoder                  // 不支持的编码
+)
+
+type Error struct {
+	Err  error
+	Type ErrorType
+	Data interface{}
 }
 
-func (e *ErrParserPacket) Error() string {
-	return fmt.Sprintf("cannot parse proto type:%v msgID:%v error:%v", e.EncodeType, e.MsgID, e.Err)
+func (e *Error) Error() string {
+	return fmt.Sprintf("ErrorType: %v, Error: %v, Data: %v", e.Type, e.Err.Error(), e.Data)
 }
 
-func NewErrParsePacket(et, msgID uint16, err error) *ErrParserPacket {
-	return &ErrParserPacket{EncodeType: et, MsgID: msgID, Err: err}
+func (e *Error) IsType(flags ErrorType) bool {
+	return e.Type == flags
+}
+
+func NewError(err error, errorType ErrorType, data interface{}) *Error {
+	return &Error{
+		Err:  err,
+		Type: errorType,
+		Data: data,
+	}
 }

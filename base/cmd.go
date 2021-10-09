@@ -1,10 +1,10 @@
 package base
 
 type Command interface {
-	Done(*Object) error
+	Done(o *Object) error
 }
 
-type CommandWrapper func(*Object) error
+type CommandWrapper func(o *Object) error
 
 func (cw CommandWrapper) Done(o *Object) error {
 	return cw(o)

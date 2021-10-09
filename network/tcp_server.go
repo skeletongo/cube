@@ -34,10 +34,10 @@ func (t *TCPServer) Start() error {
 	addr := fmt.Sprintf("%s:%d", t.SC.Ip, t.SC.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.WithField("service", t.SC).Errorf("tcp server start error: %v", err)
+		log.WithField("ServiceInfo", t.SC).Errorf("tcp server start error: %v", err)
 		return err
 	}
-	log.WithField("service", t.SC).Trace("tcp server start")
+	log.WithField("ServiceInfo", t.SC).Trace("tcp server start")
 
 	t.ln = ln
 
@@ -57,11 +57,11 @@ func (t *TCPServer) Start() error {
 					if max := 1 * time.Second; tempDelay > max {
 						tempDelay = max
 					}
-					log.Warningf("accept error: %v; retrying in %v", err, tempDelay)
+					log.WithField("ServiceInfo", t.SC).Warningf("accept error: %v; retrying in %v", err, tempDelay)
 					time.Sleep(tempDelay)
 					continue
 				}
-				log.WithField("service", t.SC).Warningf("tcp server listener error: %v", err)
+				log.WithField("ServiceInfo", t.SC).Warningf("tcp server listener error: %v", err)
 				return
 			}
 			tempDelay = 0
@@ -69,7 +69,7 @@ func (t *TCPServer) Start() error {
 			case t.connCh <- conn:
 			default:
 				conn.Close()
-				log.Error("connection channel full")
+				log.WithField("ServiceInfo", t.SC).Error("connection channel full")
 			}
 		}
 	}()
@@ -80,6 +80,7 @@ func (t *TCPServer) Update() {
 	for {
 		select {
 		case s := <-t.sessionCh:
+			s.fireAfterClosed()
 			delete(t.sessions, s)
 			if t.close && len(t.sessions) == 0 {
 				t.network.ServiceClosed(t.SC)
@@ -108,25 +109,31 @@ func (t *TCPServer) Update() {
 
 		case conn := <-t.connCh:
 			if len(t.sessions) > t.SC.MaxConnNum {
-				log.Warning("too many connections")
+				log.WithField("ServiceInfo", t.SC).Warning("too many connections")
 				conn.Close()
 				continue
 			}
 
+			var err error
 			s := NewSession(t.SC)
-			agent, err := NewTCPSession(s, conn)
+			s.agent, err = NewTCPSession(s, conn)
 			if err != nil {
-				log.WithField("service", t.SC).Errorf("NewTCPSession error: %v", err)
+				log.WithField("ServiceInfo", t.SC).Errorf("NewTCPSession error: %v", err)
 				conn.Close()
 				continue
 			}
-			s.SetAgent(agent)
+
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
 				s.readMsg()
 				t.sessionCh <- s
 			}()
+
+			if !s.fireAfterConnected() {
+				s.Close()
+				continue
+			}
 
 		default:
 			for v := range t.sessions {
@@ -138,6 +145,6 @@ func (t *TCPServer) Update() {
 }
 
 func (t *TCPServer) Shutdown() {
-	log.WithField("service", t.SC).Trace("tcp server shutdown")
+	log.WithField("ServiceInfo", t.SC).Trace("tcp server shutdown")
 	t.ln.Close()
 }

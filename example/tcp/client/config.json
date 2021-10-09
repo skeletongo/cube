@@ -1,0 +1,47 @@
+{
+    "module": {
+        "Options": {
+            "Interval": 100
+        }
+    },
+    "task": {
+        "Options": {
+            "Interval": 0
+        },
+        "Worker": {
+            "Options": {
+                "Interval": 0
+            },
+            "WorkerCnt": 5
+        }
+    },
+    "network": {
+        "Endian": false,
+        "IsJson": false,
+        "LenMsgLen": 2,
+        "MinMsgLen": 1,
+        "MaxMsgLen": 4096,
+        "Services": [
+            {
+                "Area": 1,
+                "Type": 2,
+                "ID": 1,
+                "Name": "TcpClient",
+                "Protocol": "tcp",
+                "Ip": "127.0.0.1",
+                "Port": 8888,
+                "IsClient": true,
+                "AutoReconnect": true,
+                "ClientNum": 1,
+                "Linger": 0,
+                "KeepAlive": false,
+                "KeepAlivePeriod": 0,
+                "ReadBufferSize": 0,
+                "WriteBufferSize": 0,
+                "ReadTimeout": 0,
+                "WriteTimeout": 0,
+                "FilterChain": ["test_filter"]
+            }
+        ]
+    }
+}

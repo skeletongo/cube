@@ -15,7 +15,7 @@ type D struct {
 }
 
 func TestMarshal(t *testing.T) {
-	network.SetHandlerFunc(1, new(D), func(s *network.Session, msgID uint16, msg interface{}) error {
+	network.SetHandlerFunc(1, new(D), func(c *network.Context) error {
 		return nil
 	})
 
@@ -33,7 +33,7 @@ func TestMarshal(t *testing.T) {
 }
 
 func TestMarshalNoMsgID(t *testing.T) {
-	data, err := gMsgParser.MarshalNoMsgID(&D{
+	data, err := gMsgParser.MarshalUnregister(&D{
 		Name: "Tom",
 		Age:  20,
 	})
@@ -43,6 +43,6 @@ func TestMarshalNoMsgID(t *testing.T) {
 	}
 
 	msg := new(D)
-	err = gMsgParser.UnmarshalNoMsgID(data, msg)
+	_, err = gMsgParser.UnmarshalUnregister(data, msg)
 	fmt.Printf("Msg:%v Err:%v\n", msg, err)
 }

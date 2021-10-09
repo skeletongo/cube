@@ -47,7 +47,7 @@ func (t *TCPClient) dial(addr string) net.Conn {
 				return conn
 			}
 		}
-		log.WithField("service", t.SC).Warningf("connect to %v error: %v", addr, err)
+		log.WithField("ServiceInfo", t.SC).Warningf("connect error: %v", err)
 		time.Sleep(t.SC.ReconnectInterval)
 	}
 }
@@ -57,7 +57,7 @@ func (t *TCPClient) Start() error {
 	for i := 0; i < t.SC.ClientNum; i++ {
 		t.dialCh <- struct{}{}
 	}
-	log.WithField("service", t.SC).Trace("tcp client start")
+	log.WithField("ServiceInfo", t.SC).Trace("tcp client start")
 
 	go func() {
 		defer func() { close(t.closeSign) }()
@@ -86,6 +86,7 @@ func (t *TCPClient) Update() {
 	for {
 		select {
 		case s := <-t.sessionCh:
+			s.fireAfterClosed()
 			delete(t.sessions, s)
 			if t.close {
 				if len(t.sessions) == 0 {
@@ -94,11 +95,13 @@ func (t *TCPClient) Update() {
 				}
 				continue
 			}
-			// 重新拨号
-			select {
-			case t.dialCh <- struct{}{}:
-			default:
-				log.Panicln("bug")
+			// 断线重连
+			if s.SC.AutoReconnect {
+				select {
+				case t.dialCh <- struct{}{}:
+				default:
+					log.Panicln("bug")
+				}
 			}
 
 		case <-t.closeSign:
@@ -122,26 +125,26 @@ func (t *TCPClient) Update() {
 			}
 
 		case conn := <-t.connCh:
+			var err error
 			s := NewSession(t.SC)
-			agent, err := NewTCPSession(s, conn)
+			s.agent, err = NewTCPSession(s, conn)
 			if err != nil {
-				log.WithField("service", t.SC).Error("NewTCPSession error:", err)
+				log.WithField("ServiceInfo", t.SC).Error("NewTCPSession error:", err)
 				conn.Close()
 				continue
 			}
-			s.SetAgent(agent)
+
 			t.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
 				s.readMsg()
 				t.sessionCh <- s
 			}()
-			// test
-			//type Ping struct {
-			//	Data string
-			//}
-			//s.Send(1, &Ping{Data: "ping"})
-			// test
+
+			if !s.fireAfterConnected() {
+				s.Close()
+				continue
+			}
 
 		default:
 			for s := range t.sessions {
@@ -153,6 +156,6 @@ func (t *TCPClient) Update() {
 }
 
 func (t *TCPClient) Shutdown() {
-	log.WithField("service", t.SC).Trace("tcp client shutdown")
+	log.WithField("ServiceInfo", t.SC).Trace("tcp client shutdown")
 	close(t.dialSign)
 }

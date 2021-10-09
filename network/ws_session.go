@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bytes"
 	"io"
 	"net"
 	"time"
@@ -56,12 +57,16 @@ here:
 			if w.Session.SC.WriteTimeout > 0 {
 				w.Conn.SetWriteDeadline(time.Now().Add(w.Session.SC.WriteTimeout))
 			}
-			err = w.Session.pkgParser.EncodeByIOWriter(writer, v.data)
+			err = gPkgParser.EncodeByWriter(writer, v.data)
 			w.Conn.SetWriteDeadline(zero)
 			if err != nil {
-				log.Warningf("websocket WriteMessage error: %v", err)
+				log.Warningf("websocket EncodeByWriter error: %v", err)
+				putBuffer(bytes.NewBuffer(v.data))
 				break
 			}
+
+			// 解码后再由过滤器处理
+			w.Session.fireSendMsgAfterSend(v)
 		}
 	}
 
@@ -81,17 +86,14 @@ func (w *WSSession) ReadMsg() {
 		if w.Session.SC.ReadTimeout > 0 {
 			w.Conn.SetReadDeadline(time.Now().Add(w.Session.SC.ReadTimeout))
 		}
-		data, err := w.Session.pkgParser.DecodeByIOReader(reader)
+		data, err := gPkgParser.DecodeByReader(reader)
 		w.Conn.SetReadDeadline(zero)
 		if err != nil {
-			log.Warningf("packet DecodeByIOReader error: %v", err)
+			log.Warningf("websocket DecodeByReader error: %v", err)
 			break
 		}
 
-		r := &recvPack{
-			data: data,
-		}
-		w.Session.recv <- r
+		w.Session.recv <- data
 	}
 
 	w.Session.Close()

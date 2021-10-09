@@ -3,6 +3,8 @@ package network
 import (
 	"fmt"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 type ServerInfo struct {
@@ -13,7 +15,7 @@ type ServerInfo struct {
 }
 
 func (s *ServerInfo) String() string {
-	return fmt.Sprintf("Area:%v Type:%v ID:%v Name:%v", s.Area, s.Type, s.ID, s.Name)
+	return fmt.Sprintf("Area:%v, Type:%v, ID:%v, Name:%v", s.Area, s.Type, s.ID, s.Name)
 }
 
 func (s *ServerInfo) Key() ServerKey {
@@ -34,9 +36,8 @@ func (s ServerKey) Parse() (areaId, typeId uint8, id uint16) {
 // ServiceConfig 服务配置
 type ServiceConfig struct {
 	ServerInfo
-	AuthKey    string // 秘钥
 	CertFile   string // 证书文件地址
-	KeyFile    string //
+	KeyFile    string // 秘钥文件地址
 	Path       string // ws websocket 配置
 	Protocol   string // 支持的协议 "tcp" "ws" "wss"
 	Ip         string // 内网ip地址
@@ -47,7 +48,8 @@ type ServiceConfig struct {
 	MaxConnNum int    // 支持的最大连接数量（IsClient为false时有效）
 
 	IsClient          bool          // 连接发起方
-	ReconnectInterval time.Duration // 重连间隔
+	AutoReconnect     bool          // 是否自动断线重连
+	ReconnectInterval time.Duration // 重试拨号时间间隔
 	ClientNum         int           // 建立连接数量（IsClient为true时有效）
 
 	MTU             int           // 网络传输最大数据包,单位字节
@@ -60,15 +62,20 @@ type ServiceConfig struct {
 	WriteTimeout    time.Duration // 写入数据超时时长,单位秒
 	HTTPTimeout     time.Duration // websocket 建立连接的超时时间,单位秒
 
+	FilterChain []string // 过滤器列表，要启用的过滤器名称及调用顺序
+	filterChain *FilterChain
+	MiddleChain []string // 中间件列表，要启用的中间件名称及调用顺序
+	middleChain *MiddleChain
+
 	seq uint32
 }
 
-func (sc *ServiceConfig) GetSeq() uint32 {
+func (sc *ServiceConfig) getSeq() uint32 {
 	sc.seq++
 	return sc.seq
 }
 
-func (sc *ServiceConfig) Init() {
+func (sc *ServiceConfig) init() (err error) {
 	if sc.MaxRecv <= 0 {
 		sc.MaxRecv = 1000
 	}
@@ -100,9 +107,20 @@ func (sc *ServiceConfig) Init() {
 	} else {
 		sc.HTTPTimeout *= time.Second
 	}
+
+	if sc.filterChain, err = gFilterMgr.FilterChain(sc.FilterChain...); err != nil {
+		logrus.WithField("ServiceInfo", sc).Errorf(" FilterChain error: %v", err)
+		return err
+	}
+	if sc.middleChain, err = gFilterMgr.MiddleChain(sc.MiddleChain...); err != nil {
+		logrus.WithField("ServiceInfo", sc).Errorf(" MiddleChain error: %v", err)
+		return err
+	}
+
+	return err
 }
 
 func (sc *ServiceConfig) String() string {
-	return fmt.Sprintf("%s IsClient:%v Protocol:%v IP:%v Port:%v",
+	return fmt.Sprintf("%v, IsClient:%v, Protocol:%v, IP:%v, Port:%v",
 		sc.ServerInfo.String(), sc.IsClient, sc.Protocol, sc.Ip, sc.Port)
 }

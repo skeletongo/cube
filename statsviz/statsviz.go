@@ -25,7 +25,7 @@ func (c *Configuration) Init() error {
 			return err
 		}
 		go func() {
-			logrus.Tracef("statsviz start: %s", c.Addr)
+			logrus.Infof("statsviz start: %s", c.Addr)
 			if err := http.ListenAndServe(c.Addr, mux); err != nil {
 				logrus.Errorf("statsviz: http.ListenAndServe error: %v", err)
 			}

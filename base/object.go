@@ -11,7 +11,7 @@ import (
 	"github.com/skeletongo/cube/tools"
 )
 
-// Object 节点,一个功能模块，一个协程
+// Object 基础节点，单线程模型，包含一个消息队列及定时器，在自己的线程中串行处理消息队列中的所有消息及定时任务
 type Object struct {
 	// Name 节点名称
 	Name string

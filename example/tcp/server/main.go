@@ -2,10 +2,9 @@ package main
 
 import (
 	"github.com/sirupsen/logrus"
+
 	"github.com/skeletongo/cube"
 	"github.com/skeletongo/cube/network"
-	"github.com/skeletongo/cube/timer"
-	"time"
 )
 
 type Ping struct {
@@ -19,11 +18,9 @@ type Pong struct {
 func main() {
 	logrus.SetLevel(logrus.TraceLevel)
 
-	network.SetHandlerFunc(2, &Pong{}, func(s *network.Session, msgID uint16, msg interface{}) error {
-		logrus.Info("pong:", msg.(*Pong).Data)
-		timer.AfterTimer(time.Second*3, func() {
-			s.Send(1, &Ping{Data: "ping"})
-		})
+	network.SetHandlerFunc(1, &Ping{}, func(c *network.Context) error {
+		logrus.Info("ping:", c.Msg.(*Ping).Data)
+		c.Send(2, &Pong{Data: "pong"})
 		return nil
 	})
 	cube.Run("config.json")

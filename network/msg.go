@@ -1,119 +1,24 @@
 package network
 
 import (
-	"bytes"
-	"encoding/binary"
-	"fmt"
 	"reflect"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/skeletongo/cube/network/encoding"
 )
 
-/*
- 消息序列化结构
- -----------------------
- |EncodeType|MsgID|Data|
- -----------------------
- EncodeType 编解码类型
- MsgID 消息号
- Data 消息数据
-*/
+// 应用层消息管理器
 
-// MsgParser 消息序列化和反序列化
-type MsgParser struct {
-	endian binary.ByteOrder
-}
-
-func NewMsgParser() *MsgParser {
-	return &MsgParser{
-		endian: binary.LittleEndian,
-	}
-}
-
-var gMsgParser = NewMsgParser()
-
-func (m *MsgParser) SetByteOrder(order binary.ByteOrder) {
-	m.endian = order
-}
-
-// Marshal 消息序列化
-// msgID 消息号
-// msg 消息数据
-func (m *MsgParser) Marshal(msgID uint16, msg interface{}) ([]byte, error) {
-	et := encoding.TypeTest(msg)
-	data, err := encoding.Encoding[et].Marshal(msg)
-	if err != nil {
-		return nil, err
-	}
-
-	bs := getBytesN(int(Config.LenMsgLen) + 4 + len(data))
-
-	m.endian.PutUint16(bs[Config.LenMsgLen:], uint16(et))
-	m.endian.PutUint16(bs[Config.LenMsgLen+2:], msgID)
-	copy(bs[Config.LenMsgLen+4:], data)
-	return bs, err
-}
-
-func (m *MsgParser) unmarshal(data []byte) (id, et uint16, err error) {
-	et = m.endian.Uint16(data)
-	id = m.endian.Uint16(data[2:])
-	if et < encoding.TypeNil || et >= encoding.TypeMax {
-		return id, et, NewErrParsePacket(et, id, fmt.Errorf("EncodeType:%d unregiste", et))
-	}
-	return
-}
-
-// Unmarshal 消息反序列化
-// data 序列化数据
-// 返回消息号和解析后的消息数据
-func (m *MsgParser) Unmarshal(data []byte) (msgID uint16, msg interface{}, err error) {
-	defer putBuffer(bytes.NewBuffer(data))
-
-	var et uint16
-	msgID, et, err = m.unmarshal(data[Config.LenMsgLen:])
-	if err != nil {
-		return 0, nil, err
-	}
-	msg = CreateMessage(msgID)
-	if msg == nil {
-		return 0, nil, NewErrParsePacket(et, msgID, fmt.Errorf("MsgID:%d unregiste", msgID))
-	}
-	return msgID, msg, encoding.Encoding[et].Unmarshal(data[Config.LenMsgLen+4:], msg)
-}
-
-func (m *MsgParser) MarshalNoMsgID(msg interface{}) (data []byte, err error) {
-	return m.Marshal(0, msg)
-}
-
-func (m *MsgParser) UnmarshalNoMsgID(data []byte, msg interface{}) error {
-	defer putBuffer(bytes.NewBuffer(data))
-
-	_, et, err := m.unmarshal(data[Config.LenMsgLen:])
-	if err != nil {
-		return err
-	}
-	return encoding.Encoding[et].Unmarshal(data[Config.LenMsgLen+4:], msg)
-}
-
-// ===============================
-// 业务层消息处理方法的注册
-// ===============================
+var gMsgHandler = NewMsgHandler()
 
 // Handler 消息处理接口
 type Handler interface {
-	// Process 处理收到的消息
-	// s 连接
-	// msgID 消息号
-	// msg 消息内容
-	Process(s *Session, msgID uint16, msg interface{}) error
+	Process(c *Context)
 }
 
-type handlerWrapper func(s *Session, msgID uint16, msg interface{}) error
+type handlerWrapper func(c *Context) error
 
-func (hw handlerWrapper) Process(s *Session, msgID uint16, msg interface{}) error {
-	return hw(s, msgID, msg)
+func (hw handlerWrapper) Process(c *Context) {
+	hw(c)
 }
 
 type MsgInfo struct {
@@ -183,12 +88,9 @@ func (m *MsgHandler) SetHandler(msgID uint16, msg interface{}, handler Handler) 
 // msgID 消息号
 // msg 消息结构体指针
 // handlerFunc 消息处理方法
-func (m *MsgHandler) SetHandlerFunc(msgID uint16, msg interface{},
-	handlerFunc func(s *Session, msgID uint16, msg interface{}) error) {
+func (m *MsgHandler) SetHandlerFunc(msgID uint16, msg interface{}, handlerFunc func(c *Context) error) {
 	m.SetHandler(msgID, msg, handlerWrapper(handlerFunc))
 }
-
-var gMsgHandler = NewMsgHandler()
 
 func CreateMessage(msgID uint16) interface{} {
 	return gMsgHandler.CreateMessage(msgID)
@@ -202,7 +104,6 @@ func SetHandler(msgID uint16, msg interface{}, handler Handler) {
 	gMsgHandler.SetHandler(msgID, msg, handler)
 }
 
-func SetHandlerFunc(msgID uint16, msg interface{},
-	handlerFunc func(s *Session, msgID uint16, msg interface{}) error) {
+func SetHandlerFunc(msgID uint16, msg interface{}, handlerFunc func(c *Context) error) {
 	gMsgHandler.SetHandlerFunc(msgID, msg, handlerFunc)
 }

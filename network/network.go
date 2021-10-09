@@ -71,7 +71,7 @@ func (n *Network) newService(config *ServiceConfig) IService {
 	}
 
 	if err := s.Start(); err != nil {
-		log.WithField("service", config.ServerInfo.String()).Errorf("network service start error: %v", err)
+		log.WithField("ServiceInfo", config).Errorf("network service start error: %v", err)
 		return nil
 	}
 	n.service[config.Key()] = s
@@ -128,7 +128,6 @@ func (n *Network) ServiceClosed(config *ServiceConfig) {
 	}
 }
 
-// goroutine safe
 func (n *Network) NewService(config *ServiceConfig) {
 	select {
 	case gNetwork.configCh <- config:
@@ -140,7 +139,6 @@ func (n *Network) NewService(config *ServiceConfig) {
 	}
 }
 
-// goroutine safe
 func NewService(config *ServiceConfig) {
 	gNetwork.NewService(config)
 }

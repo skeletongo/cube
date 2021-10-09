@@ -36,7 +36,9 @@
                 "ReadBufferSize": 0,
                 "WriteBufferSize": 0,
                 "ReadTimeout": 0,
-                "WriteTimeout": 0
+                "WriteTimeout": 0,
+                "FilterChain": [],
+                "MiddleChain": []
             },
             {
                 "Area": 1,
@@ -53,7 +55,9 @@
                 "WriteBufferSize": 0,
                 "HTTPTimeout": 0,
                 "ReadTimeout": 0,
-                "WriteTimeout": 0
+                "WriteTimeout": 0,
+                "FilterChain": [],
+                "MiddleChain": []
             },
             {
                 "Area": 1,
@@ -61,6 +65,7 @@
                 "ID": 1,
                 "Name": "CubeTcpClient",
                 "IsClient": true,
+                "IsAutoReconnect": true,
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
                 "Port": 8888,
@@ -70,7 +75,9 @@
                 "ReadBufferSize": 0,
                 "WriteBufferSize": 0,
                 "ReadTimeout": 0,
-                "WriteTimeout": 0
+                "WriteTimeout": 0,
+                "FilterChain": [],
+                "MiddleChain": []
             },
             {
                 "Area": 1,
@@ -78,6 +85,7 @@
                 "ID": 2,
                 "Name": "CubeWSClient",
                 "IsClient": true,
+                "IsAutoReconnect": true,
                 "Protocol": "ws",
                 "Ip": "127.0.0.1",
                 "Port": 8889,
@@ -87,7 +95,9 @@
                 "WriteBufferSize": 0,
                 "HTTPTimeout": 0,
                 "ReadTimeout": 0,
-                "WriteTimeout": 0
+                "WriteTimeout": 0,
+                "FilterChain": [],
+                "MiddleChain": []
             }
         ]
     },

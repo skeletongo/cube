@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"path"
 
@@ -13,10 +12,10 @@ import (
 type Package interface {
 	// Name 模块名称
 	Name() string
-	// Load 初始化方法
+	// Init 初始化方法
 	Init() error
-	// Closer 关闭方法
-	io.Closer
+	// Close 关闭方法
+	Close() error
 }
 
 var packages = make(map[string]Package)

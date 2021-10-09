@@ -5,8 +5,8 @@ import (
 	"math"
 	"time"
 
+	"github.com/skeletongo/cube/encoding"
 	"github.com/skeletongo/cube/module"
-	"github.com/skeletongo/cube/network/encoding"
 )
 
 var Config = new(Configuration)
@@ -32,11 +32,13 @@ func (c *Configuration) Name() string {
 
 func (c *Configuration) Init() error {
 	for i := 0; i < len(c.Services); i++ {
-		c.Services[i].Init()
+		if err := c.Services[i].init(); err != nil {
+			return err
+		}
 	}
 
 	if c.Endian {
-		encoding.SetEndian(binary.BigEndian)
+		encoding.SetByteOrder(binary.BigEndian)
 		gMsgParser.SetByteOrder(binary.BigEndian)
 		gPkgParser.SetByteOrder(binary.BigEndian)
 	}

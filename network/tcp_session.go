@@ -1,6 +1,7 @@
 package network
 
 import (
+	"bytes"
 	"net"
 	"time"
 
@@ -56,12 +57,16 @@ func (t *TCPSession) SendMsg() {
 		if t.Session.SC.WriteTimeout > 0 {
 			t.Conn.SetWriteDeadline(time.Now().Add(t.Session.SC.WriteTimeout))
 		}
-		err := t.Session.pkgParser.EncodeByIOWriter(t.Conn, v.data)
+		err := gPkgParser.EncodeByWriter(t.Conn, v.data)
 		t.Conn.SetWriteDeadline(zero)
 		if err != nil {
-			log.Warningf("packet EncodeByIOWriter error: %v", err)
+			log.Warningf("TCP EncodeByWriter error: %v", err)
+			putBuffer(bytes.NewBuffer(v.data))
 			break
 		}
+
+		// 解码后再由过滤器处理
+		t.Session.fireSendMsgAfterSend(v)
 	}
 
 	t.Session.Close()
@@ -73,17 +78,14 @@ func (t *TCPSession) ReadMsg() {
 		if t.Session.SC.ReadTimeout > 0 {
 			t.Conn.SetReadDeadline(time.Now().Add(t.Session.SC.ReadTimeout))
 		}
-		data, err := t.Session.pkgParser.DecodeByIOReader(t.Conn)
+		data, err := gPkgParser.DecodeByReader(t.Conn)
 		t.Conn.SetReadDeadline(zero)
 		if err != nil {
-			log.Warningf("packet DecodeByIOReader error: %v", err)
+			log.Warningf("TCP DecodeByReader error: %v", err)
 			break
 		}
 
-		r := &recvPack{
-			data: data,
-		}
-		t.Session.recv <- r
+		t.Session.recv <- data
 	}
 
 	t.Session.Close()

@@ -53,7 +53,7 @@ func (w *WSClient) dial(url string) *websocket.Conn {
 				return conn
 			}
 		}
-		log.WithField("service", w.SC).Warningf("connect to %v error: %v", url, err)
+		log.WithField("ServiceInfo", w.SC).Warningf("connect to %v error: %v", url, err)
 		time.Sleep(w.SC.ReconnectInterval)
 	}
 }
@@ -63,7 +63,7 @@ func (w *WSClient) Start() error {
 	for i := 0; i < w.SC.ClientNum; i++ {
 		w.dialCh <- struct{}{}
 	}
-	log.WithField("service", w.SC).Trace("websocket client start")
+	log.WithField("ServiceInfo", w.SC).Trace("websocket client start")
 
 	go func() {
 		defer func() { close(w.closeSign) }()
@@ -92,6 +92,7 @@ func (w *WSClient) Update() {
 	for {
 		select {
 		case s := <-w.sessionCh:
+			s.fireAfterClosed()
 			delete(w.sessions, s)
 			if w.close {
 				if len(w.sessions) == 0 {
@@ -100,11 +101,13 @@ func (w *WSClient) Update() {
 				}
 				continue
 			}
-			// 重新拨号
-			select {
-			case w.dialCh <- struct{}{}:
-			default:
-				log.Panicln("bug")
+			// 断线重连
+			if s.SC.AutoReconnect {
+				select {
+				case w.dialCh <- struct{}{}:
+				default:
+					log.Panicln("bug")
+				}
 			}
 
 		case <-w.closeSign:
@@ -128,26 +131,26 @@ func (w *WSClient) Update() {
 			}
 
 		case conn := <-w.connCh:
+			var err error
 			s := NewSession(w.SC)
-			agent, err := NewWSSession(s, conn)
+			s.agent, err = NewWSSession(s, conn)
 			if err != nil {
-				log.WithField("service", w.SC).Errorf("NewWSSession error: %v", err)
+				log.WithField("ServiceInfo", w.SC).Errorf("NewWSSession error: %v", err)
 				conn.Close()
 				continue
 			}
-			s.SetAgent(agent)
+
 			w.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
 				s.readMsg()
 				w.sessionCh <- s
 			}()
-			// test
-			//type Ping struct {
-			//	Data string
-			//}
-			//s.Send(1, &Ping{Data: "ping"})
-			// test
+
+			if !s.fireAfterConnected() {
+				s.Close()
+				continue
+			}
 
 		default:
 			for s := range w.sessions {
@@ -159,6 +162,6 @@ func (w *WSClient) Update() {
 }
 
 func (w *WSClient) Shutdown() {
-	log.WithField("service", w.SC).Trace("websocket client shutdown")
+	log.WithField("ServiceInfo", w.SC).Trace("websocket client shutdown")
 	close(w.dialSign)
 }

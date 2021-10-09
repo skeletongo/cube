@@ -54,7 +54,7 @@ func (w *WSServer) ServeHTTP(resp http.ResponseWriter, req *http.Request) {
 	case w.connCh <- conn:
 	default:
 		conn.Close()
-		log.Error("connection channel full")
+		log.WithField("ServiceInfo", w.SC).Error("connection channel full")
 	}
 }
 
@@ -62,10 +62,10 @@ func (w *WSServer) Start() error {
 	addr := fmt.Sprintf("%s:%d", w.SC.Ip, w.SC.Port)
 	ln, err := net.Listen("tcp", addr)
 	if err != nil {
-		log.WithField("service", w.SC).Errorf("websocket server start error: %v", err)
+		log.WithField("ServiceInfo", w.SC).Errorf("websocket server start error: %v", err)
 		return err
 	}
-	log.WithField("service", w.SC).Trace("websocket server start")
+	log.WithField("ServiceInfo", w.SC).Trace("websocket server start")
 
 	if w.SC.CertFile != "" || w.SC.KeyFile != "" {
 		config := &tls.Config{}
@@ -75,7 +75,7 @@ func (w *WSServer) Start() error {
 		config.Certificates = make([]tls.Certificate, 1)
 		config.Certificates[0], err = tls.LoadX509KeyPair(w.SC.CertFile, w.SC.KeyFile)
 		if err != nil {
-			log.WithField("service", w.SC).Errorf("tls error: %v", err)
+			log.WithField("ServiceInfo", w.SC).Errorf("tls error: %v", err)
 			return err
 		}
 
@@ -95,7 +95,7 @@ func (w *WSServer) Start() error {
 	go func() {
 		defer func() { close(w.closeSign) }()
 		if err = w.server.Serve(ln); err != nil {
-			log.WithField("service", w.SC).Warningf("websocket httpServer error: %v", err)
+			log.WithField("ServiceInfo", w.SC).Warningf("websocket httpServer error: %v", err)
 			w.server.Close()
 			w.ln.Close()
 		}
@@ -107,6 +107,7 @@ func (w *WSServer) Update() {
 	for {
 		select {
 		case s := <-w.sessionCh:
+			s.fireAfterClosed()
 			delete(w.sessions, s)
 			if w.close && len(w.sessions) == 0 {
 				w.network.ServiceClosed(w.SC)
@@ -135,25 +136,31 @@ func (w *WSServer) Update() {
 
 		case conn := <-w.connCh:
 			if len(w.sessions) > w.SC.MaxConnNum {
-				log.Warning("too many connections")
+				log.WithField("ServiceInfo", w.SC).Warning("too many connections")
 				conn.Close()
 				continue
 			}
 
+			var err error
 			s := NewSession(w.SC)
-			agent, err := NewWSSession(s, conn)
+			s.agent, err = NewWSSession(s, conn)
 			if err != nil {
-				log.WithField("service", w.SC).Errorf("NewWSSession error: %v", err)
+				log.WithField("ServiceInfo", w.SC).Errorf("NewWSSession error: %v", err)
 				conn.Close()
 				continue
 			}
-			s.SetAgent(agent)
+
 			w.sessions[s] = struct{}{}
 			go s.sendMsg()
 			go func() {
 				s.readMsg()
 				w.sessionCh <- s
 			}()
+
+			if !s.fireAfterConnected() {
+				s.Close()
+				continue
+			}
 
 		default:
 			for v := range w.sessions {
@@ -165,7 +172,7 @@ func (w *WSServer) Update() {
 }
 
 func (w *WSServer) Shutdown() {
-	log.WithField("service", w.SC).Trace("websocket server shutdown")
+	log.WithField("ServiceInfo", w.SC).Trace("websocket server shutdown")
 	w.server.Close()
 	w.ln.Close()
 }

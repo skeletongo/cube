@@ -24,14 +24,12 @@
         "Services": [
             {
                 "Area": 1,
-                "Type": 2,
+                "Type": 1,
                 "ID": 1,
-                "Name": "TcpClient",
+                "Name": "TcpService",
                 "Protocol": "tcp",
                 "Ip": "127.0.0.1",
                 "Port": 8888,
-                "IsClient": true,
-                "ClientNum": 1,
                 "Linger": 0,
                 "KeepAlive": false,
                 "KeepAlivePeriod": 0,

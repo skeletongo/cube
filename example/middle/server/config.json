@@ -24,18 +24,17 @@
         "Services": [
             {
                 "Area": 1,
-                "Type": 2,
+                "Type": 1,
                 "ID": 1,
-                "Name": "WSClient",
-                "IsClient": true,
-                "Protocol": "ws",
+                "Name": "TcpService",
+                "Protocol": "tcp",
                 "Ip": "127.0.0.1",
-                "Port": 8889,
-                "Path": "/",
-                "ClientNum": 1,
+                "Port": 8888,
+                "Linger": 0,
+                "KeepAlive": false,
+                "KeepAlivePeriod": 0,
                 "ReadBufferSize": 0,
                 "WriteBufferSize": 0,
-                "HTTPTimeout": 0,
                 "ReadTimeout": 0,
                 "WriteTimeout": 0
             }
