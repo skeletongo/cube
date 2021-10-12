@@ -5,7 +5,7 @@ import (
 	"encoding/binary"
 )
 
-// Binary 二进制
+// Binary 二进制编码
 type Binary struct {
 	ByteOrder binary.ByteOrder
 }

@@ -9,15 +9,14 @@ import (
 // sendCallback 执行回调函数
 func sendCallback(o *base.Object, t *Task) {
 	if t == nil {
-		log.Error("Task is nil")
+		log.Error("task is nil")
 		return
 	}
 	if o == nil {
-		log.Error("Task run CallbackFunc error: object is nil")
+		log.Error("task run CallbackFunc error: object is nil")
 		return
 	}
-	o.Send(base.CommandWrapper(func(o *base.Object) error {
+	o.SendFunc(func(o *base.Object) {
 		t.callback()
-		return nil
-	}))
+	})
 }

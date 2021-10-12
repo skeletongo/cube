@@ -13,8 +13,8 @@ const (
 	Capacity    = 10
 )
 
-// IService 网络服务
-type IService interface {
+// Service 网络服务
+type Service interface {
 	Start() error
 	Update()
 	Shutdown()
@@ -22,14 +22,14 @@ type IService interface {
 
 // Network 网络服务管理器
 type Network struct {
-	service  map[ServerKey]IService
+	service  map[ServerKey]Service
 	configCh chan *ServiceConfig
 	close    bool
 }
 
 func NewNetwork() *Network {
 	return &Network{
-		service:  make(map[ServerKey]IService, Capacity),
+		service:  make(map[ServerKey]Service, Capacity),
 		configCh: make(chan *ServiceConfig, Capacity),
 	}
 }
@@ -40,12 +40,12 @@ func (n *Network) Name() string {
 	return "network"
 }
 
-func (n *Network) newService(config *ServiceConfig) IService {
+func (n *Network) newService(config *ServiceConfig) Service {
 	if n.close || config == nil {
 		return nil
 	}
 
-	var s IService
+	var s Service
 	if config.IsClient {
 		switch config.Protocol {
 		case "ws", "wss":
@@ -67,6 +67,7 @@ func (n *Network) newService(config *ServiceConfig) IService {
 	}
 
 	if s == nil {
+		log.WithField("ServiceInfo", config).Errorf("not implemented Protocol %s", config.Protocol)
 		return nil
 	}
 
@@ -106,7 +107,7 @@ func (n *Network) Close() {
 	n.close = true
 
 	if len(n.service) == 0 {
-		module.Closed(n)
+		module.Release(n)
 		return
 	}
 
@@ -115,7 +116,10 @@ func (n *Network) Close() {
 	}
 }
 
-func (n *Network) ServiceClosed(config *ServiceConfig) {
+// Release 确认网络服务已经关闭
+// 网络服务关闭后需要主动调用此方法确认已经关闭，否则会影响程序关闭
+// config 服务配置
+func (n *Network) Release(config *ServiceConfig) {
 	delete(n.service, config.Key())
 	if !n.close {
 		time.AfterFunc(TimeRestart, func() {
@@ -124,21 +128,25 @@ func (n *Network) ServiceClosed(config *ServiceConfig) {
 		return
 	}
 	if len(n.service) == 0 {
-		module.Closed(n)
+		module.Release(n)
 	}
 }
 
+// NewService 新增网络服务
+// config 服务配置
 func (n *Network) NewService(config *ServiceConfig) {
 	select {
 	case gNetwork.configCh <- config:
 	default:
-		log.Errorf("Network: service channel full, retrying in %v", TimeRestart)
+		log.Warningf("Network: service channel full, retrying in %v", TimeRestart)
 		time.AfterFunc(TimeRestart, func() {
 			n.NewService(config)
 		})
 	}
 }
 
+// NewService 新增网络服务
+// config 服务配置
 func NewService(config *ServiceConfig) {
 	gNetwork.NewService(config)
 }

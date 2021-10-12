@@ -1,33 +1,29 @@
 package task
 
 import (
-	"errors"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/skeletongo/cube/base"
 )
-
-var ErrCannotFindWorker = errors.New("Cannot find Worker ")
 
 // sendToExecutor 给预创建的协程节点发送待执行的任务
 func sendToExecutor(t *Task, name string) {
 	if t == nil || Obj == nil {
 		return
 	}
-	Obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	Obj.SendFunc(func(o *base.Object) {
 		if gMaster.closing {
-			log.Warning("Task closed")
-			return nil
+			log.Warning("task closed")
+			return
 		}
 		w := gMaster.getWorker(name)
 		if w == nil {
-			return ErrCannotFindWorker
+			log.Errorf("cannot find worker, name %s", name)
+			return
 		}
 
 		sendCall(w.Object, t)
-		return nil
-	}))
+	})
 }
 
 // sendToFixExecutor 给指定的一个协程节点发送待执行的任务,如果协程节点找不到就新建一个
@@ -35,10 +31,10 @@ func sendToFixExecutor(t *Task, name string) {
 	if t == nil || Obj == nil {
 		return
 	}
-	Obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	Obj.SendFunc(func(o *base.Object) {
 		if gMaster.closing {
-			log.Warning("Task closed")
-			return nil
+			log.Warning("task closed")
+			return
 		}
 		w := gMaster.getWorkerByName(name)
 		if w == nil {
@@ -47,6 +43,5 @@ func sendToFixExecutor(t *Task, name string) {
 		}
 
 		sendCall(w.Object, t)
-		return nil
-	}))
+	})
 }

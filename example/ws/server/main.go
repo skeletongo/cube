@@ -16,12 +16,11 @@ type Pong struct {
 }
 
 func main() {
-	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 
-	network.SetHandlerFunc(1, &Ping{}, func(c *network.Context) error {
+	network.SetHandlerFunc(1, &Ping{}, func(c *network.Context) {
 		logrus.Info("ping:", c.Msg.(*Ping).Data)
 		c.Send(2, &Pong{Data: "pong"})
-		return nil
 	})
 	cube.Run("config.json")
 }

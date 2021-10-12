@@ -47,7 +47,8 @@ func (t *TCPClient) dial(addr string) net.Conn {
 				return conn
 			}
 		}
-		log.WithField("ServiceInfo", t.SC).Warningf("connect error: %v", err)
+		log.WithField("ServiceInfo", t.SC).Warningf("tcp client dial to %v error: %v, retrying in %v",
+			err, addr, t.SC.ReconnectInterval)
 		time.Sleep(t.SC.ReconnectInterval)
 	}
 }
@@ -90,7 +91,7 @@ func (t *TCPClient) Update() {
 			delete(t.sessions, s)
 			if t.close {
 				if len(t.sessions) == 0 {
-					t.network.ServiceClosed(t.SC)
+					t.network.Release(t.SC)
 					return
 				}
 				continue
@@ -117,7 +118,7 @@ func (t *TCPClient) Update() {
 					conn.Close()
 				default:
 					if len(t.sessions) == 0 {
-						t.network.ServiceClosed(t.SC)
+						t.network.Release(t.SC)
 						return
 					}
 					break here
@@ -148,7 +149,7 @@ func (t *TCPClient) Update() {
 
 		default:
 			for s := range t.sessions {
-				s.Do()
+				s.do()
 			}
 			return
 		}

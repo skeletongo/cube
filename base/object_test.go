@@ -12,26 +12,21 @@ func ExampleObject_Send() {
 	var n []int
 	obj := base.NewObject("test", &base.Options{Interval: 0}, nil)
 	obj.Run()
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	obj.SendFunc(func(o *base.Object) {
 		n = append(n, 1)
-		return nil
-	}))
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	})
+	obj.SendFunc(func(o *base.Object) {
 		fmt.Println(n)
-		return nil
-	}))
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	})
+	obj.SendFunc(func(o *base.Object) {
 		n = append(n, 2)
-		return nil
-	}))
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	})
+	obj.SendFunc(func(o *base.Object) {
 		n = append(n, 3)
-		return nil
-	}))
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	})
+	obj.SendFunc(func(o *base.Object) {
 		fmt.Println(n)
-		return nil
-	}))
+	})
 	obj.Close()
 	<-obj.Closed
 	// Output:
@@ -62,37 +57,33 @@ func TestObject_Run(t *testing.T) {
 
 	for i := 2; i < 6; i++ {
 		go func(n int) {
-			obj.Send(base.CommandWrapper(func(o *base.Object) error {
+			obj.SendFunc(func(o *base.Object) {
 				RunCh <- n
-				return nil
-			}))
+			})
 		}(i)
 	}
 	time.Sleep(time.Millisecond * 10)
 	// 1 [2 3 4 5]
 
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	obj.SendFunc(func(o *base.Object) {
 		time.Sleep(time.Millisecond * 50)
-		return nil
-	}))
+	})
 	// 1 [2 3 4 5] 6
 
 	for i := 7; i < 9; i++ {
 		go func(n int) {
-			obj.Send(base.CommandWrapper(func(o *base.Object) error {
+			obj.SendFunc(func(o *base.Object) {
 				RunCh <- n
 				time.Sleep(time.Millisecond * 10)
-				return nil
-			}))
+			})
 		}(i)
 	}
 	time.Sleep(time.Millisecond * 100)
 	// 1 [2 3 4 5] 6 [7 8] 6
 
-	obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	obj.SendFunc(func(o *base.Object) {
 		RunCh <- 9
-		return nil
-	}))
+	})
 	// 1 [2 3 4 5] 6 [7 8] 6 9
 
 	obj.Close()

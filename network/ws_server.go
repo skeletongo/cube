@@ -110,7 +110,7 @@ func (w *WSServer) Update() {
 			s.fireAfterClosed()
 			delete(w.sessions, s)
 			if w.close && len(w.sessions) == 0 {
-				w.network.ServiceClosed(w.SC)
+				w.network.Release(w.SC)
 				return
 			}
 
@@ -127,7 +127,7 @@ func (w *WSServer) Update() {
 					conn.Close()
 				default:
 					if len(w.sessions) == 0 {
-						w.network.ServiceClosed(w.SC)
+						w.network.Release(w.SC)
 						return
 					}
 					break here
@@ -164,7 +164,7 @@ func (w *WSServer) Update() {
 
 		default:
 			for v := range w.sessions {
-				v.Do()
+				v.do()
 			}
 			return
 		}

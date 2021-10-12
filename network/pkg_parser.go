@@ -19,6 +19,7 @@ import (
 
 var gPkgParser = NewPkgParser()
 
+// PkgParser 数据包解析器
 type PkgParser struct {
 	lenMsgLen uint32           // data数据的字节个数用几个字节存储
 	minMsgLen uint32           // data数据最少字节个数
@@ -35,6 +36,11 @@ func NewPkgParser() *PkgParser {
 	}
 }
 
+// SetMsgLen 修改默认配置
+// lenMsgLen 记录消息字节数占用的字节数
+// minMsgLen 消息最少字节数量
+// maxMsgLen 消息最大字节数量
+// 返回校验后的配置
 func (p *PkgParser) SetMsgLen(lenMsgLen uint32, minMsgLen uint32, maxMsgLen uint32) (uint32, uint32, uint32) {
 	if lenMsgLen == 1 || lenMsgLen == 2 || lenMsgLen == 4 {
 		p.lenMsgLen = lenMsgLen
@@ -64,10 +70,12 @@ func (p *PkgParser) SetMsgLen(lenMsgLen uint32, minMsgLen uint32, maxMsgLen uint
 	return p.lenMsgLen, p.minMsgLen, p.maxMsgLen
 }
 
+// SetByteOrder 修改字节序，默认小端序
 func (p *PkgParser) SetByteOrder(order binary.ByteOrder) {
 	p.endian = order
 }
 
+// Encode 应用层数据包编码
 func (p *PkgParser) Encode(b []byte) (data []byte, err error) {
 	var msgLen = uint32(len(b)) - p.lenMsgLen
 	if msgLen > p.maxMsgLen {
@@ -87,6 +95,7 @@ func (p *PkgParser) Encode(b []byte) (data []byte, err error) {
 	return b, err
 }
 
+// EncodeByWriter 应用层数据包编码并发送
 func (p *PkgParser) EncodeByWriter(w io.Writer, b []byte) (err error) {
 	var data []byte
 	data, err = p.Encode(b)
@@ -97,6 +106,7 @@ func (p *PkgParser) EncodeByWriter(w io.Writer, b []byte) (err error) {
 	return
 }
 
+// Decode 协议层数据包解码成应用层数据包
 func (p *PkgParser) Decode(b []byte) (data []byte, err error) {
 	if len(b) < int(p.lenMsgLen) {
 		return nil, errors.New("lenMsgLen too short")
@@ -121,6 +131,7 @@ func (p *PkgParser) Decode(b []byte) (data []byte, err error) {
 	return b, err
 }
 
+// DecodeByReader 读取协议层数据包并解码成应用层数据包
 func (p *PkgParser) DecodeByReader(r io.Reader) (b []byte, err error) {
 	bs := getBytesN(int(p.lenMsgLen))
 	defer func() {

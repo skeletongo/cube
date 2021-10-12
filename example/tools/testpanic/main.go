@@ -22,21 +22,33 @@ func (m *myModule) Init() {
 }
 
 func (m *myModule) Update() {
-	logrus.Error("eeeeeeeeeeeeeeeee")
+	logrus.Error("error line 25")
+	logrus.Errorf("error line 26")
+	logrus.Errorln("error line 27")
 	panic("my module panic")
 }
 
 func (m *myModule) Close() {
-	defer module.Closed(m)
+	defer module.Release(m)
 	panic("my module panic")
 }
 
 func main() {
-	logrus.AddHook(tools.NewFileLineHook(logrus.ErrorLevel))
+	*logrus.StandardLogger() = *logrus.New()
+
+	//h := &tools.FileLineHook{
+	//	LogLevels: []logrus.Level{logrus.ErrorLevel},
+	//	FieldName: "line",
+	//	Skip:      8,
+	//	Num:       2,
+	//	Test:      false,
+	//}
+
+	logrus.AddHook(tools.NewFileLineHook(logrus.AllLevels...))
 
 	pkg.RegisterPackage(module.Config)
 	module.Register(new(myModule), time.Second*5, 0)
 	pkg.Load("config.json")
 	module.Start()
-	select {}
+	<-module.Obj.Closed
 }

@@ -5,26 +5,32 @@ import (
 	"fmt"
 )
 
+// Opportunity 过滤器及中间件的执行时机
 type Opportunity int
 
 const (
-	AfterConnected Opportunity = iota
-	AfterClosed
-	BeforeReceived
-	AfterReceived
-	BeforeSend
-	AfterSend
+	AfterConnected Opportunity = iota // 建立连接之后
+	AfterClosed                       // 连接关闭之后
+	BeforeReceived                    // 消息处理之前
+	AfterReceived                     // 消息处理之后，如果消息处理异常可能不会触发
+	BeforeSend                        // 发送消息之前
+	AfterSend                         // 发送消息之后，如果消息发送失败不会触发
+	ErrorMsgID                        // 收到未注册的消息时
 	MaxOpportunity
 )
 
+// Filter 过滤器
 type Filter interface {
+	// Get 获取特定时机的过滤方法
 	Get(op Opportunity) func(c *Context) bool
 }
 
+// FilterChain 过滤器调用链
 type FilterChain struct {
 	functions [][]func(c *Context) bool
 }
 
+// Fire 在特定时机调用过滤器方法链
 func (fc *FilterChain) Fire(op Opportunity, c *Context) bool {
 	for _, f := range fc.functions[op] {
 		if !f(c) {
@@ -34,20 +40,25 @@ func (fc *FilterChain) Fire(op Opportunity, c *Context) bool {
 	return true
 }
 
+// Middle 中间件
 type Middle interface {
+	// Get 获取特定时机的中间件方法
 	Get(op Opportunity) func(c *Context)
 }
 
+// MiddleChain 中间件调用链
 type MiddleChain struct {
 	functions [][]func(c *Context)
 }
 
+// Fire 在特定时机调用中间件方法链
 func (m *MiddleChain) Fire(op Opportunity, c *Context) {
 	for _, f := range m.functions[op] {
 		f(c)
 	}
 }
 
+// FilterMgr 过滤器及中间件管理器
 type FilterMgr struct {
 	filterChain    []Filter
 	middleChain    []Middle
@@ -62,14 +73,22 @@ func NewFilerMgr() *FilterMgr {
 	}
 }
 
+// RegisterFilter 注册过滤器
+// name 名称
+// f 过滤器创建方法
 func (m *FilterMgr) RegisterFilter(name string, f func() Filter) {
 	m.filterCreators[name] = f
 }
 
+// RegisterMiddle 注册中间件
+// name 名称
+// f 中间件创建方法
 func (m *FilterMgr) RegisterMiddle(name string, f func() Middle) {
 	m.middleCreators[name] = f
 }
 
+// FilterChain 根据名称获取过滤器调用链
+// name 过滤器名称，也是多个过滤器的调用顺序
 func (m *FilterMgr) FilterChain(name ...string) (chain *FilterChain, err error) {
 	chain = &FilterChain{
 		functions: make([][]func(c *Context) bool, MaxOpportunity),
@@ -98,6 +117,8 @@ func (m *FilterMgr) FilterChain(name ...string) (chain *FilterChain, err error) 
 	return
 }
 
+// MiddleChain 根据名称获取中间件调用链
+// name 中间件名称，也是多个中间件的调用顺序
 func (m *FilterMgr) MiddleChain(name ...string) (chain *MiddleChain, err error) {
 	chain = &MiddleChain{
 		functions: make([][]func(c *Context), MaxOpportunity),
@@ -126,36 +147,18 @@ func (m *FilterMgr) MiddleChain(name ...string) (chain *MiddleChain, err error) 
 	return
 }
 
+// AddFilter 追加过滤器
 func (m *FilterMgr) AddFilter(f func() Filter) {
 	m.filterChain = append(m.filterChain, f())
 }
 
+// AddMiddle 追加中间件
 func (m *FilterMgr) AddMiddle(f func() Middle) {
 	m.middleChain = append(m.middleChain, f())
 }
 
-var gFilterMgr = NewFilerMgr()
-
-func RegisterFilter(name string, f func() Filter) {
-	gFilterMgr.RegisterFilter(name, f)
-}
-
-func RegisterMiddle(name string, f func() Middle) {
-	gFilterMgr.RegisterMiddle(name, f)
-}
-
-// AddFilter 添加过滤器，配置文件中的FilterChain会覆盖代码中添加的过滤器
-func AddFilter(f func() Filter) {
-	gFilterMgr.AddFilter(f)
-}
-
-// AddMiddle 添加中间件，配置文件中的MiddleChain会覆盖代码中添加的中间件
-func AddMiddle(f func() Middle) {
-	gFilterMgr.AddMiddle(f)
-}
-
 type FilterFunc struct {
-	AfterConnected, BeforeReceived, AfterReceived, BeforeSend, AfterSend, AfterClosed func(c *Context) bool
+	AfterConnected, BeforeReceived, AfterReceived, BeforeSend, AfterSend, AfterClosed, ErrorMsgID func(c *Context) bool
 }
 
 func (m *FilterFunc) Get(op Opportunity) func(c *Context) bool {
@@ -172,12 +175,14 @@ func (m *FilterFunc) Get(op Opportunity) func(c *Context) bool {
 		return m.AfterSend
 	case AfterClosed:
 		return m.AfterClosed
+	case ErrorMsgID:
+		return m.ErrorMsgID
 	}
 	return nil
 }
 
 type MiddleFunc struct {
-	AfterConnected, BeforeReceived, AfterReceived, BeforeSend, AfterSend, AfterClosed func(c *Context)
+	AfterConnected, BeforeReceived, AfterReceived, BeforeSend, AfterSend, AfterClosed, ErrorMsgID func(c *Context)
 }
 
 func (m *MiddleFunc) Get(op Opportunity) func(c *Context) {
@@ -194,6 +199,34 @@ func (m *MiddleFunc) Get(op Opportunity) func(c *Context) {
 		return m.AfterSend
 	case AfterClosed:
 		return m.AfterClosed
+	case ErrorMsgID:
+		return m.ErrorMsgID
 	}
 	return nil
+}
+
+var gFilterMgr = NewFilerMgr()
+
+// RegisterFilter 注册过滤器
+// name 名称
+// f 过滤器创建方法
+func RegisterFilter(name string, f func() Filter) {
+	gFilterMgr.RegisterFilter(name, f)
+}
+
+// RegisterMiddle 注册中间件
+// name 名称
+// f 中间件创建方法
+func RegisterMiddle(name string, f func() Middle) {
+	gFilterMgr.RegisterMiddle(name, f)
+}
+
+// AddFilter 追加过滤器，配置文件中的FilterChain会覆盖代码中添加的过滤器
+func AddFilter(f func() Filter) {
+	gFilterMgr.AddFilter(f)
+}
+
+// AddMiddle 追加中间件，配置文件中的MiddleChain会覆盖代码中添加的中间件
+func AddMiddle(f func() Middle) {
+	gFilterMgr.AddMiddle(f)
 }

@@ -13,11 +13,21 @@ import (
 	"github.com/skeletongo/cube/module"
 )
 
+// Agent 连接
 type Agent interface {
+	// LocalAddr 获取本地地址
 	LocalAddr() net.Addr
+
+	// RemoteAddr 获取远程地址
 	RemoteAddr() net.Addr
+
+	// SendMsg 发送消息线程
 	SendMsg()
+
+	// ReadMsg 读取客户端消息线程
 	ReadMsg()
+
+	// Close 连接关闭方法
 	Close() error
 }
 
@@ -26,6 +36,7 @@ type sendPack struct {
 	msgType reflect.Type
 }
 
+// SessionKey 连接标识
 type SessionKey uint64
 
 func (s SessionKey) Parse() (areaId, typeId uint8, id uint16, sessionId uint32) {
@@ -40,7 +51,7 @@ type Session struct {
 	ID        uint32
 	SC        *ServiceConfig
 	context   *Context
-	agent     Agent
+	agent     Agent          // 连接实例
 	send      chan *sendPack // 消息发送队列
 	recv      chan []byte    // 消息接收队列
 	closeSign chan struct{}
@@ -77,6 +88,10 @@ func (s *Session) RemoteAddr() net.Addr {
 	return s.agent.RemoteAddr()
 }
 
+// Send 发送消息
+// msgID 消息号
+// msg 消息数据
+// 线程不安全，必须在module节点上执行
 func (s *Session) Send(msgID uint16, msg interface{}) {
 	// update context
 	s.context.MsgID = msgID
@@ -91,7 +106,7 @@ func (s *Session) Send(msgID uint16, msg interface{}) {
 		return
 	}
 
-	data, err := gMsgParser.Marshal(s.context.MsgID, s.context.Msg)
+	data, err := gMsgParser.Marshal(s.context.MsgID, s.context.Msg, int(Config.LenMsgLen))
 	if err != nil {
 		log.WithField("msgID", s.context.MsgID).Errorf("send message error: %v", err)
 		return
@@ -103,7 +118,7 @@ func (s *Session) Send(msgID uint16, msg interface{}) {
 	case s.send <- &sendPack{data: data, msgType: msgType}:
 	default:
 		log.WithField("SessionInfo", s).Error("close conn: channel full")
-		s.Close()
+		_ = s.Close()
 	}
 }
 
@@ -155,22 +170,30 @@ func (s *Session) fireAfterSend() bool {
 	return true
 }
 
+func (s *Session) fireErrorMsgID() bool {
+	if !s.SC.filterChain.Fire(ErrorMsgID, s.context) {
+		return false
+	}
+	s.SC.middleChain.Fire(ErrorMsgID, s.context)
+	return true
+}
+
 func (s *Session) fireSendMsgAfterSend(pack *sendPack) {
 	if len(s.SC.filterChain.functions[AfterSend]) > 0 ||
 		len(s.SC.middleChain.functions[AfterSend]) > 0 {
 		msg := reflect.New(pack.msgType.Elem()).Interface()
-		msgID, err := gMsgParser.UnmarshalUnregister(pack.data, msg)
+		msgID, err := gMsgParser.UnmarshalUnregister(pack.data, msg, int(Config.LenMsgLen))
+		putBuffer(bytes.NewBuffer(pack.data))
 		if err != nil {
 			log.Errorf("SendMsg UnmarshalUnregister error: %v", err)
 			return
 		}
-		module.Obj.Send(base.CommandWrapper(func(o *base.Object) error {
+		module.Obj.SendFunc(func(o *base.Object) {
 			// update context
 			s.context.MsgID = msgID
 			s.context.Msg = msg
 			s.fireAfterSend()
-			return nil
-		}))
+		})
 	} else {
 		putBuffer(bytes.NewBuffer(pack.data))
 	}
@@ -184,15 +207,25 @@ func (s *Session) readMsg() {
 	s.agent.ReadMsg()
 }
 
-func (s *Session) Do() {
+func (s *Session) do() {
 	for i := 0; i < s.SC.MaxRecv; i++ {
 		select {
 		case v := <-s.recv:
-			msgID, msg, err := gMsgParser.Unmarshal(v)
+			msgID, msg, err := gMsgParser.Unmarshal(v, int(Config.LenMsgLen))
 			if err != nil {
-				log.Errorf("message unmarshal error: %v", err)
+				if e, ok := err.(*Error); ok && e.IsType(ErrorTypeMsgID) {
+					// update context
+					s.context.MsgID = msgID
+					s.context.Packet = v[Config.LenMsgLen:]
+					s.fireErrorMsgID()
+					s.context.Packet = nil
+				} else {
+					log.Errorf("message unmarshal error: %v", err)
+					putBuffer(bytes.NewBuffer(v))
+				}
 				continue
 			}
+			putBuffer(bytes.NewBuffer(v))
 
 			// update context
 			s.context.MsgID = msgID

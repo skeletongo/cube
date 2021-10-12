@@ -19,18 +19,17 @@ type Pong struct {
 }
 
 func main() {
-	logrus.SetLevel(logrus.TraceLevel)
+	logrus.SetLevel(logrus.InfoLevel)
 
 	network.RegisterFilter("test_filter", func() network.Filter {
 		return new(myFilter)
 	})
 
-	network.SetHandlerFunc(2, &Pong{}, func(c *network.Context) error {
+	network.SetHandlerFunc(2, &Pong{}, func(c *network.Context) {
 		logrus.Info("pong:", c.Msg.(*Pong).Data)
 		timer.AfterTimer(time.Second*3, func() {
 			c.Send(1, &Ping{Data: "ping"})
 		})
-		return nil
 	})
 	cube.Run("config.json")
 }

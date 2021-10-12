@@ -11,12 +11,15 @@ import (
 	"github.com/skeletongo/cube/tools"
 )
 
-// Object 基础节点，单线程模型，包含一个消息队列及定时器，在自己的线程中串行处理消息队列中的所有消息及定时任务
+// Object 基础节点，单线程模型
+// 包含一个消息队列及定时器，在单线程中串行处理消息队列中的所有消息及定时任务
+// 优先处理队列消息，队列消息处理后查看定时任务是否需要执行
+// 注意此线程中执行的方法不应该是耗时操作，否则整个线程会被阻塞
 type Object struct {
 	// Name 节点名称
 	Name string
 
-	// Data 节点保存的数据
+	// Data 节点数据
 	Data interface{}
 
 	// Opt 节点配置
@@ -29,11 +32,13 @@ type Object struct {
 	Closed chan struct{}
 
 	// doneNum 已处理消息数量
+	doneNum uint64
+
 	// sendNum 收到的消息总数
-	doneNum, sendNum uint64
+	sendNum uint64
 
 	// q 消息队列
-	q queue.Queue
+	q Queue
 
 	// signal 收到新消息的信号
 	// 作用：当消息队列为空时，阻塞当前节点所在的协程，当收到新消息后不再阻塞
@@ -53,9 +58,10 @@ type Object struct {
 // sinker 节点生命周期
 func NewObject(name string, opt *Options, sinker Sinker) *Object {
 	if opt == nil {
-		log.WithField("name", name).Panicln("NewObject error: required Options")
+		log.Panicf("new object error: required Options, name %s", name)
 		return nil
 	}
+	log.Tracef("new object, name %s", name)
 	opt.Init()
 	o := &Object{
 		Name:    name,
@@ -84,7 +90,7 @@ func (o *Object) State() *State {
 // Run 启动节点
 // 创建一个协程来处理消息队列中的消息和定时任务
 func (o *Object) Run() {
-	log.WithField("name", o.Name).Traceln("Object start")
+	log.Tracef("object run, name %s", o.Name)
 	o.safeStart()
 	go o.run()
 }
@@ -115,7 +121,7 @@ func (o *Object) run() {
 	}
 
 	o.safeStop()
-	log.WithField("name", o.Name).Traceln("Object closed")
+	log.Tracef("object close, name %s", o.Name)
 	close(o.Closed)
 }
 
@@ -131,17 +137,14 @@ func (o *Object) canStop() bool {
 }
 
 func (o *Object) safeDone(cmd Command) {
-	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeDone", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%s) safeDone", o.Name))
 
 	defer func() { atomic.AddUint64(&o.doneNum, 1) }()
-
-	if err := cmd.Done(o); err != nil {
-		panic(err)
-	}
+	cmd.Done(o)
 }
 
 func (o *Object) safeStart() {
-	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeStart", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%s) safeStart", o.Name))
 
 	if o.sinker != nil {
 		o.sinker.OnStart()
@@ -149,7 +152,7 @@ func (o *Object) safeStart() {
 }
 
 func (o *Object) safeTick() {
-	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeTick", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%s) safeTick", o.Name))
 
 	if o.sinker != nil {
 		o.sinker.OnTick()
@@ -157,22 +160,26 @@ func (o *Object) safeTick() {
 }
 
 func (o *Object) safeStop() {
-	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%v) safeStop", o.Name))
+	defer tools.RecoverPanicFunc(fmt.Sprintf("object(%s) safeStop", o.Name))
 
 	if o.sinker != nil {
 		o.sinker.OnStop()
 	}
 }
 
-// Send 给当前节点发送消息
+// SendCommand 给当前节点发送消息
 // 此方法为非阻塞方法，消息为异步处理，消息先进入消息队列等待处理
-func (o *Object) Send(c Command) {
+func (o *Object) SendCommand(c Command) {
 	atomic.AddUint64(&o.sendNum, 1)
 	o.q.Enqueue(c)
 	select {
 	case o.signal <- struct{}{}:
 	default:
 	}
+}
+
+func (o *Object) SendFunc(f func(o *Object)) {
+	o.SendCommand(CommandWrapper(f))
 }
 
 // IsClosing 是否正在关闭
@@ -207,6 +214,6 @@ func (o *Object) Close() {
 	default:
 		close(o.Closing)
 		// 当队列为空时，发送一个空消息，使节点立刻关闭
-		o.Send(new(NilCommand))
+		o.SendCommand(new(NilCommand))
 	}
 }

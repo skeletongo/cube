@@ -1,7 +1,6 @@
 package network_test
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/skeletongo/cube/network"
@@ -15,34 +14,34 @@ type D struct {
 }
 
 func TestMarshal(t *testing.T) {
-	network.SetHandlerFunc(1, new(D), func(c *network.Context) error {
-		return nil
+	network.SetHandlerFunc(1, new(D), func(c *network.Context) {
 	})
 
 	data, err := gMsgParser.Marshal(1, &D{
 		Name: "Tom",
 		Age:  20,
-	})
+	}, 2)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	id, msg, err := gMsgParser.Unmarshal(data)
+	id, msg, err := gMsgParser.Unmarshal(data, 2)
 	t.Logf("msgID:%v Msg:%v Err:%v\n", id, *msg.(*D), err)
 }
 
-func TestMarshalNoMsgID(t *testing.T) {
-	data, err := gMsgParser.MarshalUnregister(&D{
+func TestUnmarshalUnregister(t *testing.T) {
+	data, err := gMsgParser.Marshal(1, &D{
 		Name: "Tom",
 		Age:  20,
-	})
+	}, 2)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
 	msg := new(D)
-	_, err = gMsgParser.UnmarshalUnregister(data, msg)
-	fmt.Printf("Msg:%v Err:%v\n", msg, err)
+
+	id, err := gMsgParser.UnmarshalUnregister(data, msg, 2)
+	t.Logf("msgID:%v Msg:%v Err:%v\n", id, *msg, err)
 }

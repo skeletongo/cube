@@ -83,7 +83,7 @@ func (t *TCPServer) Update() {
 			s.fireAfterClosed()
 			delete(t.sessions, s)
 			if t.close && len(t.sessions) == 0 {
-				t.network.ServiceClosed(t.SC)
+				t.network.Release(t.SC)
 				return
 			}
 
@@ -100,7 +100,7 @@ func (t *TCPServer) Update() {
 					conn.Close()
 				default:
 					if len(t.sessions) == 0 {
-						t.network.ServiceClosed(t.SC)
+						t.network.Release(t.SC)
 						return
 					}
 					break here
@@ -137,7 +137,7 @@ func (t *TCPServer) Update() {
 
 		default:
 			for v := range t.sessions {
-				v.Do()
+				v.do()
 			}
 			return
 		}

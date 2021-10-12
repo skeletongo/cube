@@ -69,22 +69,22 @@ func (m *Master) getWorkerByName(name string) *Worker {
 	return nil
 }
 
+// Close 关闭协程管理器
 func Close() {
 	if gMaster == nil || Obj == nil {
 		return
 	}
-	Obj.Send(base.CommandWrapper(func(o *base.Object) error {
+	Obj.SendFunc(func(o *base.Object) {
 		if gMaster.closing {
-			return nil
+			return
 		}
 		gMaster.closing = true
 		for _, v := range gMaster.workers {
 			v.Close()
 		}
-		return nil
-	}))
+	})
 	for _, v := range gMaster.workers {
 		<-v.Closed
 	}
-	log.Infoln("Task closed")
+	log.Info("task closed")
 }

@@ -8,8 +8,11 @@ import (
 
 var gEncoding = NewEncoding()
 
+// EncodeType 编码器类型
+type EncodeType int
+
 const (
-	TypeNil = iota
+	TypeNil EncodeType = iota
 	TypeGPB
 	TypeBinary
 	TypeGob
@@ -25,11 +28,13 @@ type EncDecoder interface {
 	Marshal(data interface{}) ([]byte, error)
 }
 
+// Encoding 编码管理器
 type Encoding struct {
-	DefaultEncodeType int
+	DefaultEncodeType EncodeType
 	encodingMap       [TypeMax]EncDecoder
 }
 
+// NewEncoding 创建编码管理器
 func NewEncoding() *Encoding {
 	return &Encoding{
 		DefaultEncodeType: TypeGob,
@@ -43,18 +48,22 @@ func NewEncoding() *Encoding {
 	}
 }
 
+// SetByteOrder 修改字节序，默认小端序
 func (e *Encoding) SetByteOrder(order binary.ByteOrder) {
 	e.encodingMap[TypeBinary] = &Binary{order}
 }
 
-func (e *Encoding) GetEncoding(n int) (EncDecoder, bool) {
+// GetEncoding 获取指定的编码器
+// 返回编码器和是否存在
+func (e *Encoding) GetEncoding(n EncodeType) (EncDecoder, bool) {
 	if n < 0 || n >= TypeMax {
 		return nil, false
 	}
 	return e.encodingMap[n], true
 }
 
-func (e *Encoding) TypeTest(msg interface{}) int {
+// TypeTest 根据消息类型判断使用什么编码方式
+func (e *Encoding) TypeTest(msg interface{}) EncodeType {
 	switch msg.(type) {
 	case proto.Message:
 		return TypeGPB
@@ -65,18 +74,23 @@ func (e *Encoding) TypeTest(msg interface{}) int {
 	}
 }
 
+// SetByteOrder 修改字节序，默认小端序
 func SetByteOrder(order binary.ByteOrder) {
 	gEncoding.SetByteOrder(order)
 }
 
-func SetDefaultEncodeType(n int) {
+// SetDefaultEncodeType 修改默认编码类型，默认 encoding/gob 编码
+func SetDefaultEncodeType(n EncodeType) {
 	gEncoding.DefaultEncodeType = n
 }
 
-func TypeTest(msg interface{}) int {
+// TypeTest 根据消息类型判断使用什么编码方式
+func TypeTest(msg interface{}) EncodeType {
 	return gEncoding.TypeTest(msg)
 }
 
-func GetEncoding(n int) (EncDecoder, bool) {
+// GetEncoding 获取指定的编码器
+// 返回编码器和是否存在
+func GetEncoding(n EncodeType) (EncDecoder, bool) {
 	return gEncoding.GetEncoding(n)
 }

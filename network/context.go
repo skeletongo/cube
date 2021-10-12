@@ -5,11 +5,21 @@ import (
 	"time"
 )
 
+// Context 消息上下文
 type Context struct {
 	*Session
+
+	// MsgID 消息号
 	MsgID uint16
-	Msg   interface{}
-	Keys  sync.Map
+
+	// Msg 消息数据
+	Msg interface{}
+
+	// Packet 收到的未注册的消息号所在的数据包
+	Packet []byte
+
+	// Keys 数据存储
+	Keys sync.Map
 }
 
 func (c *Context) Set(key string, value interface{}) {

@@ -2,6 +2,7 @@ package encoding
 
 import "encoding/json"
 
+// JSON json编码
 type JSON struct {
 }
 

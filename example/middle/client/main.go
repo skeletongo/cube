@@ -49,12 +49,11 @@ func main() {
 		return new(TestMiddle)
 	})
 
-	network.SetHandlerFunc(2, &Pong{}, func(ctx *network.Context) error {
+	network.SetHandlerFunc(2, &Pong{}, func(ctx *network.Context) {
 		logrus.Info("pong:", ctx.Msg.(*Pong).Data)
 		timer.AfterTimer(time.Second*3, func() {
 			ctx.Send(1, &Ping{Data: "ping"})
 		})
-		return nil
 	})
 	cube.Run("config.json")
 }

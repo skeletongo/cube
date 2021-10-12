@@ -7,6 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// ServerInfo 服务标识
 type ServerInfo struct {
 	Area uint8  // 地区
 	Type uint8  // 类型
@@ -18,6 +19,7 @@ func (s *ServerInfo) String() string {
 	return fmt.Sprintf("Area:%v, Type:%v, ID:%v, Name:%v", s.Area, s.Type, s.ID, s.Name)
 }
 
+// Key 服务标识转换成数字形式
 func (s *ServerInfo) Key() ServerKey {
 	// 由低位到高位依次 ID(16位) Type(8位)  Area(8位)
 	key := uint32(0)
@@ -27,6 +29,7 @@ func (s *ServerInfo) Key() ServerKey {
 	return ServerKey(key)
 }
 
+// ServerKey 服务标识数字形式
 type ServerKey uint32
 
 func (s ServerKey) Parse() (areaId, typeId uint8, id uint16) {
@@ -38,7 +41,7 @@ type ServiceConfig struct {
 	ServerInfo
 	CertFile   string // 证书文件地址
 	KeyFile    string // 秘钥文件地址
-	Path       string // ws websocket 配置
+	Path       string // websocket连接名称
 	Protocol   string // 支持的协议 "tcp" "ws" "wss"
 	Ip         string // 内网ip地址
 	OutIp      string // 公网ip地址

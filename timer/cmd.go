@@ -11,11 +11,10 @@ import (
 // t 延时方法
 func SendTimer(o *base.Object, f func()) {
 	if o == nil {
-		log.Warnln("Timer error: object is nil")
+		log.Warning("timer error: object is nil")
 		return
 	}
-	o.Send(base.CommandWrapper(func(o *base.Object) error {
+	o.SendFunc(func(o *base.Object) {
 		f()
-		return nil
-	}))
+	})
 }

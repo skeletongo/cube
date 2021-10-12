@@ -53,7 +53,8 @@ func (w *WSClient) dial(url string) *websocket.Conn {
 				return conn
 			}
 		}
-		log.WithField("ServiceInfo", w.SC).Warningf("connect to %v error: %v", url, err)
+		log.WithField("ServiceInfo", w.SC).Warningf("websocket connect to %v error: %v, retrying in %v",
+			url, err, w.SC.ReconnectInterval)
 		time.Sleep(w.SC.ReconnectInterval)
 	}
 }
@@ -96,7 +97,7 @@ func (w *WSClient) Update() {
 			delete(w.sessions, s)
 			if w.close {
 				if len(w.sessions) == 0 {
-					w.network.ServiceClosed(w.SC)
+					w.network.Release(w.SC)
 					return
 				}
 				continue
@@ -123,7 +124,7 @@ func (w *WSClient) Update() {
 					conn.Close()
 				default:
 					if len(w.sessions) == 0 {
-						w.network.ServiceClosed(w.SC)
+						w.network.Release(w.SC)
 						return
 					}
 					break here
@@ -154,7 +155,7 @@ func (w *WSClient) Update() {
 
 		default:
 			for s := range w.sessions {
-				s.Do()
+				s.do()
 			}
 			return
 		}

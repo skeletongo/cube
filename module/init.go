@@ -13,13 +13,12 @@ func (s *sink) OnStart() {
 }
 
 func (s *sink) OnTick() {
-	gModuleMgr.onTick()
+	gModuleMgr.OnTick()
 }
 
 func (s *sink) OnStop() {
 }
 
-// Config 节点配置
 var Config = new(Configuration)
 
 type Configuration struct {
