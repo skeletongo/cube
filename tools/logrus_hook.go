@@ -8,15 +8,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// FileLineHook 设置打印文件路径及行号
+// FileLineHook 新增一个字段用来打印文件路径及行号
 type FileLineHook struct {
 	LogLevels []logrus.Level // 需要打印的日志级别
-	FieldName string         // 名称
+	FieldName string         // 字段名称
 	Skip      int            // 跳过几层调用栈
 	Num       int            // Skip后的查找范围
 	Test      bool           // 打印所有调用栈信息，找出合适的 Skip 配置
-	filename  string
-	line      int
+	filename  string         // 文件名
+	line      int            // 行号
 }
 
 func (e *FileLineHook) Levels() []logrus.Level {
