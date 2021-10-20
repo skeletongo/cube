@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/skeletongo/cube/pkg"
+	"github.com/skeletongo/cube"
 	"github.com/skeletongo/cube/statsviz"
 )
 
@@ -49,7 +49,7 @@ func main() {
 	go Work()
 
 	log.SetLevel(log.TraceLevel)
-	pkg.RegisterPackage(statsviz.Config)
-	pkg.Load("config.json")
+	cube.Register(statsviz.Config)
+	cube.Load("config.json")
 	select {}
 }

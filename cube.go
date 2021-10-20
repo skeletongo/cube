@@ -8,7 +8,6 @@ import (
 
 	"github.com/skeletongo/cube/module"
 	"github.com/skeletongo/cube/network"
-	"github.com/skeletongo/cube/pkg"
 	"github.com/skeletongo/cube/statsviz"
 	"github.com/skeletongo/cube/task"
 	"github.com/skeletongo/cube/timer"
@@ -18,15 +17,15 @@ func Run(config string) {
 	log.Infof("Cube %v starting up", Version)
 
 	// 需要启用的功能模块
-	pkg.RegisterPackage(module.Config)
-	pkg.RegisterPackage(task.Config)
-	pkg.RegisterPackage(network.Config)
-	pkg.RegisterPackage(statsviz.Config)
+	Register(module.Config)
+	Register(task.Config)
+	Register(network.Config)
+	Register(statsviz.Config)
 
 	// 读取配置文件，模块初始化
-	pkg.Load(config)
+	Load(config)
 	defer func() {
-		pkg.Close()
+		Close()
 		log.Infoln("Cube closed")
 	}()
 

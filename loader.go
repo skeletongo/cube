@@ -1,4 +1,4 @@
-package pkg
+package cube
 
 import (
 	"encoding/json"
@@ -20,16 +20,26 @@ type Package interface {
 
 var packages = make(map[string]Package)
 
-// RegisterPackage 注册模块
-func RegisterPackage(p Package) {
+// Register 注册模块
+func Register(p Package) {
 	packages[p.Name()] = p
 }
 
-var configEncrypt Encrypt
+// Encrypt 配置文件加解密方式
+type Encrypt interface {
+	// IsCipherText 是否为加密数据
+	IsCipherText([]byte) bool
+	// Encrypt 数据加密
+	Encrypt([]byte) []byte
+	// Decode 数据解密
+	Decode([]byte) []byte
+}
+
+var encrypt Encrypt
 
 // RegisterEncrypt 注册加解密功能
 func RegisterEncrypt(h Encrypt) {
-	configEncrypt = h
+	encrypt = h
 }
 
 // Load 加载功能模块
@@ -42,9 +52,9 @@ func Load(filePath string) {
 			log.Errorf("Reading config file filepath:%s error:%s", filePath, err)
 			break
 		}
-		if configEncrypt != nil {
-			if configEncrypt.IsCipherText(bytes) {
-				bytes = configEncrypt.Decode(bytes)
+		if encrypt != nil {
+			if encrypt.IsCipherText(bytes) {
+				bytes = encrypt.Decode(bytes)
 			}
 		}
 		var data interface{}

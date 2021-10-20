@@ -5,8 +5,8 @@ import (
 
 	"github.com/sirupsen/logrus"
 
+	"github.com/skeletongo/cube"
 	"github.com/skeletongo/cube/module"
-	"github.com/skeletongo/cube/pkg"
 	"github.com/skeletongo/cube/tools"
 )
 
@@ -46,9 +46,9 @@ func main() {
 
 	logrus.AddHook(tools.NewFileLineHook(logrus.AllLevels...))
 
-	pkg.RegisterPackage(module.Config)
+	cube.Register(module.Config)
 	module.Register(new(myModule), time.Second*5, 0)
-	pkg.Load("config.json")
+	cube.Load("config.json")
 	module.Start()
 	<-module.Obj.Closed
 }
