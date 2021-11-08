@@ -12,9 +12,9 @@ const (
 	AfterConnected Opportunity = iota // 建立连接之后
 	AfterClosed                       // 连接关闭之后
 	BeforeReceived                    // 消息处理之前
-	AfterReceived                     // 消息处理之后，如果消息处理异常可能不会触发
+	AfterReceived                     // 消息处理之后
 	BeforeSend                        // 发送消息之前
-	AfterSend                         // 发送消息之后，如果消息发送失败不会触发
+	AfterSend                         // 发送消息之后
 	ErrorMsgID                        // 收到未注册的消息时
 	MaxOpportunity
 )
