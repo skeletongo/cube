@@ -44,9 +44,6 @@ type Object struct {
 	// 作用：当消息队列为空时，阻塞当前节点所在的协程，当收到新消息后不再阻塞
 	signal chan struct{}
 
-	// ticker 定时器，用来定时处理定时任务
-	ticker *time.Ticker
-
 	// sinker 节点生命周期
 	sinker Sinker
 }
@@ -72,9 +69,6 @@ func NewObject(name string, opt *Options, sinker Sinker) *Object {
 		signal:  make(chan struct{}, 1),
 		sinker:  sinker,
 	}
-	if opt.Interval > 0 && sinker != nil {
-		o.ticker = time.NewTicker(opt.Interval)
-	}
 	return o
 }
 
@@ -92,32 +86,46 @@ func (o *Object) State() *State {
 func (o *Object) Run() {
 	log.Tracef("object run, name %s", o.Name)
 	o.safeStart()
-	go o.run()
+	if o.Opt.Interval > 0 && o.sinker != nil {
+		go o.runTicker()
+	} else {
+		go o.run()
+	}
 }
 
-func (o *Object) run() {
-	// 处理队列消息及定时任务
+func (o *Object) runTicker() {
+	t := time.NewTicker(o.Opt.Interval)
+	defer t.Stop()
+
 	for !o.canStop() {
 		if o.q.Len() <= 0 {
-			if o.ticker == nil {
-				<-o.signal
-				continue
-			}
 			select {
 			case <-o.signal:
-			case <-o.ticker.C:
+			case <-t.C:
 				o.safeTick()
 			}
 			continue
 		}
 		o.safeDone(o.q.Dequeue().(Command))
-		if o.ticker != nil {
-			select {
-			case <-o.ticker.C:
-				o.safeTick()
-			default:
-			}
+		select {
+		case <-t.C:
+			o.safeTick()
+		default:
 		}
+	}
+
+	o.safeStop()
+	log.Tracef("object close, name %s", o.Name)
+	close(o.Closed)
+}
+
+func (o *Object) run() {
+	for !o.canStop() {
+		if o.q.Len() <= 0 {
+			<-o.signal
+			continue
+		}
+		o.safeDone(o.q.Dequeue().(Command))
 	}
 
 	o.safeStop()
