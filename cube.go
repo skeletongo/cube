@@ -6,10 +6,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/skeletongo/cube/g"
 	"github.com/skeletongo/cube/module"
 	"github.com/skeletongo/cube/network"
 	"github.com/skeletongo/cube/statsviz"
-	"github.com/skeletongo/cube/task"
 	"github.com/skeletongo/cube/timer"
 )
 
@@ -18,7 +18,6 @@ func Run(config string) {
 
 	// 需要启用的功能模块
 	Register(module.Config)
-	Register(task.Config)
 	Register(network.Config)
 	Register(statsviz.Config)
 
@@ -30,7 +29,7 @@ func Run(config string) {
 	}()
 
 	timer.SetObject(module.Obj)
-	task.SetObject(module.Obj)
+	g.SetObject(module.Obj)
 	module.Start()
 
 	c := make(chan os.Signal, 1)
@@ -39,11 +38,8 @@ func Run(config string) {
 	log.Infof("Cube closing down (signal: %v)", sig)
 
 	module.Close()
-	task.Close()
 	timer.StopAll()
-
-	task.Obj.Close()
-	<-task.Obj.Closed
+	g.Wait()
 
 	module.Obj.Close()
 	<-module.Obj.Closed

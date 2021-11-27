@@ -249,11 +249,8 @@ func (s *Session) Close() error {
 	case <-s.closeSign:
 		return nil
 	default:
-		// 防止 closeSign 被多次关闭
-		func() {
-			defer func() { recover() }()
-			close(s.closeSign)
-		}()
+		defer func() { recover() }()
+		close(s.closeSign)
 	}
 
 	err := s.agent.Close()

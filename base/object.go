@@ -190,28 +190,6 @@ func (o *Object) SendFunc(f func(o *Object)) {
 	o.SendCommand(CommandWrapper(f))
 }
 
-// IsClosing 是否正在关闭
-//func (o *Object) IsClosing() bool {
-//	select {
-//	case <-o.Closed:
-//		return false
-//	case <-o.Closing:
-//		return true
-//	default:
-//		return false
-//	}
-//}
-
-// IsClosed 是否已经关闭
-//func (o *Object) IsClosed() bool {
-//	select {
-//	case <-o.Closed:
-//		return true
-//	default:
-//		return false
-//	}
-//}
-
 // Close 关闭节点
 func (o *Object) Close() {
 	select {
@@ -220,6 +198,7 @@ func (o *Object) Close() {
 	case <-o.Closed:
 		return
 	default:
+		defer func() { recover() }()
 		close(o.Closing)
 		// 当队列为空时，发送一个空消息，使节点立刻关闭
 		o.SendCommand(new(NilCommand))

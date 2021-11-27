@@ -10,5 +10,5 @@
 * module: 自定义功能模块  
     * network: 提供网络服务，支持tcp,websocket，过滤器network.Filter，中间件network.Middle  
 * timer: 创建延迟函数及定时任务  
-* task: 创建任务，对多线程的支持
+* g: 多线程支持
 * statsviz: 查看程序运行时的工具库 https://github.com/arl/statsviz

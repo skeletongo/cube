@@ -50,8 +50,6 @@ func (n *Network) newService(config *ServiceConfig) Service {
 		switch config.Protocol {
 		case "ws", "wss":
 			s = NewWSClient(n, config)
-		case "udp":
-
 		default:
 			s = NewTCPClient(n, config)
 		}
@@ -59,8 +57,6 @@ func (n *Network) newService(config *ServiceConfig) Service {
 		switch config.Protocol {
 		case "ws", "wss":
 			s = NewWSServer(n, config)
-		case "udp":
-
 		default:
 			s = NewTCPServer(n, config)
 		}
