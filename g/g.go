@@ -2,6 +2,7 @@ package g
 
 import (
 	"container/list"
+	"context"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -12,39 +13,22 @@ import (
 	"github.com/skeletongo/cube/tools"
 )
 
-// gObject 回调方法默认执行节点
-var gObject *base.Object
+// object 回调方法默认执行节点
+var object *base.Object
 
 func SetObject(o *base.Object) {
-	gObject = o
+	object = o
 }
 
 // num 启动的协程数量
 var num int64
 
-// Wait 等待所有协程处理完成
-func Wait() {
-	if atomic.LoadInt64(&num) == 0 {
-		log.Info("goroutines closed")
-		return
-	}
-
-	t := time.NewTicker(time.Second)
-	for {
-		select {
-		case <-t.C:
-			n := atomic.LoadInt64(&num)
-			if n == 0 {
-				log.Info("goroutines closed")
-				return
-			}
-			log.Infof("goroutines closing, remaining %d", n)
-		}
-	}
-}
+// root 用来通知所有协程关闭
+var root, cancel = context.WithCancel(context.Background())
 
 type g struct {
-	o *base.Object
+	ctx context.Context
+	o   *base.Object
 }
 
 // New 创建协程对象
@@ -55,17 +39,19 @@ func New(o ...*base.Object) *g {
 		obj = o[0]
 	}
 	if obj == nil {
-		obj = gObject
+		obj = object
 	}
+	ctx, _ := context.WithCancel(root)
 	return &g{
-		o: obj,
+		ctx: ctx,
+		o:   obj,
 	}
 }
 
 // Go 启动一个协程
 // callFunc 在协程中执行的方法
 // callbackFunc 回调方法
-func (g *g) Go(callFunc func(), callbackFunc ...func()) {
+func (g *g) Go(callFunc func(ctx context.Context), callbackFunc ...func()) {
 	var f func()
 	if len(callbackFunc) > 0 {
 		f = callbackFunc[0]
@@ -86,7 +72,7 @@ func (g *g) Go(callFunc func(), callbackFunc ...func()) {
 		}()
 		defer tools.RecoverPanicFunc("goroutines error")
 		if callFunc != nil {
-			callFunc()
+			callFunc(g.ctx)
 		}
 	}()
 }
@@ -94,21 +80,22 @@ func (g *g) Go(callFunc func(), callbackFunc ...func()) {
 // Go 启动一个协程，在默认节点上执行回调方法
 // callFunc 在协程中执行的方法
 // callbackFunc 回调方法
-func Go(callFunc func(), callbackFunc ...func()) {
+func Go(callFunc func(ctx context.Context), callbackFunc ...func()) {
 	New().Go(callFunc, callbackFunc...)
 }
 
 type _go struct {
-	callFunc     func() // 执行方法
-	callbackFunc func() // 回调方法
+	callFunc     func(ctx context.Context) // 执行方法
+	callbackFunc func()                    // 回调方法
 }
 
 // q 协程队列，同一个队列中的协程串行执行
 type q struct {
-	o  *base.Object
-	l  *list.List
-	lm sync.Mutex
-	gm sync.Mutex
+	ctx context.Context
+	o   *base.Object
+	l   *list.List
+	lm  sync.Mutex
+	gm  sync.Mutex
 }
 
 // NewQ 创建协程队列
@@ -119,18 +106,20 @@ func NewQ(o ...*base.Object) *q {
 		obj = o[0]
 	}
 	if obj == nil {
-		obj = gObject
+		obj = object
 	}
+	ctx, _ := context.WithCancel(root)
 	return &q{
-		o: obj,
-		l: list.New(),
+		ctx: ctx,
+		o:   obj,
+		l:   list.New(),
 	}
 }
 
 // Go 启动一个协程
 // callFunc 在协程中执行的方法
 // callbackFunc 回调方法
-func (q *q) Go(callFunc func(), callbackFunc ...func()) {
+func (q *q) Go(callFunc func(ctx context.Context), callbackFunc ...func()) {
 	var f func()
 	if len(callbackFunc) > 0 {
 		f = callbackFunc[0]
@@ -162,7 +151,30 @@ func (q *q) Go(callFunc func(), callbackFunc ...func()) {
 		}()
 		defer tools.RecoverPanicFunc("goroutines error")
 		if g.callFunc != nil {
-			g.callFunc()
+			g.callFunc(q.ctx)
 		}
 	}()
+}
+
+// Close 通知所有协程关闭并等待所有协程处理完成
+func Close() {
+	cancel()
+
+	if atomic.LoadInt64(&num) == 0 {
+		log.Info("goroutines closed")
+		return
+	}
+
+	t := time.NewTicker(time.Second)
+	for {
+		select {
+		case <-t.C:
+			n := atomic.LoadInt64(&num)
+			if n == 0 {
+				log.Info("goroutines closed")
+				return
+			}
+			log.Infof("goroutines closing, remaining %d", n)
+		}
+	}
 }

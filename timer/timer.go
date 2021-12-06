@@ -9,11 +9,11 @@ import (
 )
 
 // 延时函数默认执行节点
-var defaultObject *base.Object
+var object *base.Object
 
 // SetObject 设置定时器延时函数默认执行节点
 func SetObject(o *base.Object) {
-	defaultObject = o
+	object = o
 }
 
 type Handle uint32
@@ -30,7 +30,7 @@ func getHandle() Handle {
 
 func newTimer(o *base.Object, h Handle, interval time.Duration, f func()) *time.Timer {
 	if o == nil {
-		o = defaultObject
+		o = object
 	}
 	t := time.AfterFunc(interval, func() {
 		handles.Delete(h)
@@ -56,7 +56,7 @@ func NewTimer(o *base.Object, interval time.Duration, f func()) Handle {
 // f 方法实例
 // 返回延时方法的id,用来提前终止执行
 func AfterTimer(interval time.Duration, f func()) Handle {
-	return NewTimer(defaultObject, interval, f)
+	return NewTimer(object, interval, f)
 }
 
 func newCron(o *base.Object, h Handle, cronExpr *CronExpr, f func()) *time.Timer {
@@ -105,7 +105,7 @@ func NewCron(o *base.Object, expr string, f func()) (Handle, error) {
 // f 定时执行的方法
 // 返回延时方法的id,用来提前终止执行,和expr配置错误
 func StartCron(expr string, f func()) (Handle, error) {
-	return NewCron(defaultObject, expr, f)
+	return NewCron(object, expr, f)
 }
 
 // Stop 停止延时方法执行

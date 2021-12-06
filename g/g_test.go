@@ -1,10 +1,12 @@
 package g_test
 
 import (
-	"github.com/skeletongo/cube/base"
-	"github.com/skeletongo/cube/g"
+	"context"
 	"sort"
 	"testing"
+
+	"github.com/skeletongo/cube/base"
+	"github.com/skeletongo/cube/g"
 )
 
 func TestGo(t *testing.T) {
@@ -17,14 +19,14 @@ func TestGo(t *testing.T) {
 	ch := make(chan int, n)
 	for i := 0; i < n; i++ {
 		v := i
-		g.Go(func() {
+		g.Go(func(ctx context.Context) {
 			ch <- v
 		}, func() {
 			a++
 		})
 	}
 
-	g.Wait()
+	g.Close()
 	o.Close()
 	<-o.Closed
 
@@ -50,14 +52,14 @@ func TestNewQ(t *testing.T) {
 	q := g.NewQ(o)
 	for i := 0; i < n; i++ {
 		v := i
-		q.Go(func() {
+		q.Go(func(ctx context.Context) {
 			arr = append(arr, v)
 		}, func() {
 			a++
 		})
 	}
 
-	g.Wait()
+	g.Close()
 	o.Close()
 	<-o.Closed
 

@@ -10,8 +10,8 @@ import (
 var Config = new(Configuration)
 
 type Configuration struct {
-	IsOpen bool
-	Addr   string
+	IsOpen bool   // 是否开启
+	Addr   string // http服务地址
 }
 
 func (c *Configuration) Name() string {

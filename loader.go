@@ -79,7 +79,7 @@ func Load(filePath string) {
 				continue
 			}
 			if err = pkg.Init(); err != nil {
-				log.Errorf("Initializing package %s error:%s", pkg.Name(), err)
+				log.Errorf("Initializing Package %s error:%s", pkg.Name(), err)
 				continue
 			}
 			log.Infof("Package [%16s] load success", pkg.Name())
