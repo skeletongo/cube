@@ -3,7 +3,7 @@ package encoding
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 var ErrorTypeNotFit = errors.New("msg not proto.Message type")

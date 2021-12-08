@@ -3,7 +3,7 @@ package encoding
 import (
 	"encoding/binary"
 
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/proto"
 )
 
 var gEncoding = NewEncoding()

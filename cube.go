@@ -38,8 +38,8 @@ func Run(config string) {
 	log.Infof("Cube closing down (signal: %v)", sig)
 
 	module.Close()
+	g.Close()
 	timer.StopAll()
-	g.Wait()
 
 	module.Obj.Close()
 	<-module.Obj.Closed

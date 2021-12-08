@@ -1,0 +1,10 @@
+{
+    "module": {
+        "Options": {
+            "Interval": 100
+        }
+    },
+    "converter": {
+        "Path": "excel"
+    }
+}

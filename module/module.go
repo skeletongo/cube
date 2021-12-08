@@ -50,7 +50,7 @@ func (m *module) safeInit() {
 func (m *module) safeUpdate(t time.Time) {
 	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeUpdate", m.mi.Name()))
 
-	if m.interval == 0 || t.Sub(m.lastTime) >= m.interval {
+	if m.interval > 0 && t.Sub(m.lastTime) >= m.interval {
 		m.lastTime = t
 		m.mi.Update()
 	}
