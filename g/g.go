@@ -27,8 +27,7 @@ var num int64
 var root, cancel = context.WithCancel(context.Background())
 
 type g struct {
-	ctx context.Context
-	o   *base.Object
+	o *base.Object
 }
 
 // New 创建协程对象
@@ -41,10 +40,8 @@ func New(o ...*base.Object) *g {
 	if obj == nil {
 		obj = object
 	}
-	ctx, _ := context.WithCancel(root)
 	return &g{
-		ctx: ctx,
-		o:   obj,
+		o: obj,
 	}
 }
 
@@ -72,7 +69,7 @@ func (g *g) Go(callFunc func(ctx context.Context), callbackFunc ...func()) {
 		}()
 		defer tools.RecoverPanicFunc("goroutines error")
 		if callFunc != nil {
-			callFunc(g.ctx)
+			callFunc(root)
 		}
 	}()
 }
@@ -91,11 +88,10 @@ type _go struct {
 
 // q 协程队列，同一个队列中的协程串行执行
 type q struct {
-	ctx context.Context
-	o   *base.Object
-	l   *list.List
-	lm  sync.Mutex
-	gm  sync.Mutex
+	o  *base.Object
+	l  *list.List
+	lm sync.Mutex
+	gm sync.Mutex
 }
 
 // NewQ 创建协程队列
@@ -108,11 +104,9 @@ func NewQ(o ...*base.Object) *q {
 	if obj == nil {
 		obj = object
 	}
-	ctx, _ := context.WithCancel(root)
 	return &q{
-		ctx: ctx,
-		o:   obj,
-		l:   list.New(),
+		o: obj,
+		l: list.New(),
 	}
 }
 
@@ -151,7 +145,7 @@ func (q *q) Go(callFunc func(ctx context.Context), callbackFunc ...func()) {
 		}()
 		defer tools.RecoverPanicFunc("goroutines error")
 		if g.callFunc != nil {
-			g.callFunc(q.ctx)
+			g.callFunc(root)
 		}
 	}()
 }
