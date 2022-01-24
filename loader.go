@@ -2,7 +2,7 @@ package cube
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"path"
 
 	log "github.com/sirupsen/logrus"
@@ -47,7 +47,7 @@ func RegisterEncrypt(h Encrypt) {
 func Load(filePath string) {
 	switch path.Ext(filePath) {
 	case ".json":
-		bytes, err := ioutil.ReadFile(filePath)
+		bytes, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Errorf("Reading config file filepath:%s error:%s", filePath, err)
 			break
