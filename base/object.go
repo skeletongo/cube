@@ -55,10 +55,10 @@ type Object struct {
 // sinker 节点生命周期
 func NewObject(name string, opt *Options, sinker Sinker) *Object {
 	if opt == nil {
-		log.Panicf("new object error: required Options, name %s", name)
+		log.Panicf("new object error: required Options, name[%s]", name)
 		return nil
 	}
-	log.Tracef("new object, name %s", name)
+	log.Tracef("new object, name[%s]", name)
 	opt.Init()
 	o := &Object{
 		Name:    name,
@@ -84,7 +84,7 @@ func (o *Object) State() *State {
 // Run 启动节点
 // 创建一个协程来处理消息队列中的消息和定时任务
 func (o *Object) Run() {
-	log.Tracef("object run, name %s", o.Name)
+	log.Tracef("object run, name[%s]", o.Name)
 	o.safeStart()
 	if o.Opt.Interval > 0 && o.sinker != nil {
 		go o.runTicker()
@@ -115,7 +115,7 @@ func (o *Object) runTicker() {
 	}
 
 	o.safeStop()
-	log.Tracef("object close, name %s", o.Name)
+	log.Tracef("object close, name[%s]", o.Name)
 	close(o.Closed)
 }
 
@@ -129,7 +129,7 @@ func (o *Object) run() {
 	}
 
 	o.safeStop()
-	log.Tracef("object close, name %s", o.Name)
+	log.Tracef("object close, name[%s]", o.Name)
 	close(o.Closed)
 }
 

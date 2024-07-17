@@ -38,8 +38,8 @@ func (m *MsgParser) SetByteOrder(order binary.ByteOrder) {
 // msg 消息数据
 // n 返回得数据切片前面填充几个空字节
 func (m *MsgParser) Marshal(msgID uint16, msg interface{}, n int) ([]byte, error) {
-	et := encoding.TypeTest(msg)
-	p, _ := encoding.GetEncoding(et)
+	et := encoding.TypeTest(msg)     // 数据类型
+	p, _ := encoding.GetEncoding(et) // 获取编码器
 	data, err := p.Marshal(msg)
 	if err != nil {
 		return nil, err
@@ -47,8 +47,8 @@ func (m *MsgParser) Marshal(msgID uint16, msg interface{}, n int) ([]byte, error
 
 	bs := getBytesN(n + 4 + len(data))
 
-	m.endian.PutUint16(bs[n:], uint16(et))
-	m.endian.PutUint16(bs[n+2:], msgID)
+	m.endian.PutUint16(bs[n:], uint16(et)) // 数据类型2字节
+	m.endian.PutUint16(bs[n+2:], msgID)    // 消息号2字节
 	copy(bs[n+4:], data)
 	return bs, err
 }
@@ -87,7 +87,7 @@ func (m *MsgParser) UnmarshalUnregister(data []byte, msg interface{}, n int) (ms
 	msgID, et = m.unmarshal(data[n:])
 	p, has := encoding.GetEncoding(et)
 	if !has {
-		return msgID, NewError(errors.New("encoder error"), ErrorTypeEncoder, 0)
+		return msgID, NewError(errors.New("encoder error"), ErrorTypeEncoder, msgID)
 	}
 	return msgID, p.Unmarshal(data[n+4:], msg)
 }

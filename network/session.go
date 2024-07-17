@@ -2,6 +2,7 @@ package network
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"net"
 	"reflect"
@@ -213,12 +214,14 @@ func (s *Session) do() {
 		case v := <-s.recv:
 			msgID, msg, err := gMsgParser.Unmarshal(v, int(Config.LenMsgLen))
 			if err != nil {
-				if e, ok := err.(*Error); ok && e.IsType(ErrorTypeMsgID) {
+				var e *Error
+				if errors.As(err, &e) && e.IsType(ErrorTypeMsgID) {
 					// update context
 					s.context.MsgID = msgID
 					s.context.Packet = v[Config.LenMsgLen:]
 					s.fireErrorMsgID()
 					s.context.Packet = nil
+					//todo v是否要回收再利用
 				} else {
 					log.Errorf("message unmarshal error: %v", err)
 					putBuffer(bytes.NewBuffer(v))

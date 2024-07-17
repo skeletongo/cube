@@ -19,7 +19,7 @@ func TestGo(t *testing.T) {
 	ch := make(chan int, n)
 	for i := 0; i < n; i++ {
 		v := i
-		g.Go(func(ctx context.Context) {
+		g.Go("", func(ctx context.Context) {
 			ch <- v
 		}, func() {
 			a++
@@ -49,7 +49,7 @@ func TestNewQ(t *testing.T) {
 	n := 1000
 	var a int
 	arr := sort.IntSlice{}
-	q := g.NewQ(o)
+	q := g.NewQ("", o)
 	for i := 0; i < n; i++ {
 		v := i
 		q.Go(func(ctx context.Context) {

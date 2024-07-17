@@ -12,6 +12,7 @@ import (
 var Config = new(Configuration)
 
 type Configuration struct {
+	ServerInfo
 	// Endian 字节序，默认为小端序，true表示大端序
 	Endian bool
 	// IsJson 修改默认编码方式为json,否则是encoding/gob

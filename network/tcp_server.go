@@ -1,6 +1,7 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -48,14 +49,15 @@ func (t *TCPServer) Start() error {
 		for {
 			conn, err := t.ln.Accept()
 			if err != nil {
-				if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				var ne net.Error
+				if errors.As(err, &ne) && ne.Timeout() {
 					if tempDelay == 0 {
 						tempDelay = 5 * time.Millisecond
 					} else {
 						tempDelay *= 2
 					}
-					if max := 1 * time.Second; tempDelay > max {
-						tempDelay = max
+					if duration := 1 * time.Second; tempDelay > duration {
+						tempDelay = duration
 					}
 					log.WithField("ServiceInfo", t.SC).Warningf("accept error: %v; retrying in %v", err, tempDelay)
 					time.Sleep(tempDelay)
