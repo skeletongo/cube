@@ -55,7 +55,7 @@ func main() {
 			ctx.Send(1, &Ping{Data: "ping"})
 		})
 	})
-	cube.Run("config.json")
+	cube.Run()
 }
 
 type TestMiddle struct {

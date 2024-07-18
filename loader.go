@@ -1,12 +1,12 @@
 package cube
 
 import (
-	"encoding/json"
-	"os"
-	"path"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/skeletongo/cube/tools"
 )
+
+var Config = tools.GetViper("config")
 
 // Package 功能模块
 type Package interface {
@@ -25,67 +25,25 @@ func Register(p Package) {
 	packages[p.Name()] = p
 }
 
-// Encrypt 配置文件加解密方式
-type Encrypt interface {
-	// IsCipherText 是否为加密数据
-	IsCipherText([]byte) bool
-	// Encrypt 数据加密
-	Encrypt([]byte) []byte
-	// Decode 数据解密
-	Decode([]byte) []byte
-}
-
-var encrypt Encrypt
-
-// RegisterEncrypt 注册加解密功能
-func RegisterEncrypt(h Encrypt) {
-	encrypt = h
-}
-
 // Load 加载功能模块
 // filePath 配置文件路径
-func Load(filePath string) {
-	switch path.Ext(filePath) {
-	case ".json":
-		bytes, err := os.ReadFile(filePath)
-		if err != nil {
-			log.Errorf("Reading config file filepath:%s error:%s", filePath, err)
-			break
+func Load() {
+	var err error
+	for name := range Config.AllSettings() {
+		pkg, ok := packages[name]
+		if !ok {
+			log.Warnf("Package %v init data not exist.", name)
+			continue
 		}
-		if encrypt != nil {
-			if encrypt.IsCipherText(bytes) {
-				bytes = encrypt.Decode(bytes)
-			}
+		if err = Config.UnmarshalKey(name, pkg); err != nil {
+			log.Errorf("Unmarshalling from config file error:%s", err)
+			continue
 		}
-		var data interface{}
-		if err = json.Unmarshal(bytes, &data); err != nil {
-			log.Errorf("Reading config unmarshal filepath:%s error:%s", filePath, err)
-			break
+		if err = pkg.Init(); err != nil {
+			log.Errorf("Initializing Package %s error:%s", pkg.Name(), err)
+			continue
 		}
-		configs := data.(map[string]interface{})
-		for name, pkg := range packages {
-			cfg, ok := configs[name]
-			if !ok {
-				log.Warnf("Package %v init data not exist.", pkg.Name())
-				continue
-			}
-			bytes, err := json.Marshal(cfg)
-			if err != nil {
-				log.Warnf("Package %v marshal data failed.", pkg.Name())
-				continue
-			}
-			if err = json.Unmarshal(bytes, &pkg); err != nil {
-				log.Errorf("Unmarshalling JSON from config file filepath:%s error:%s", filePath, err)
-				continue
-			}
-			if err = pkg.Init(); err != nil {
-				log.Errorf("Initializing Package %s error:%s", pkg.Name(), err)
-				continue
-			}
-			log.Infof("Package [%16s] load success", pkg.Name())
-		}
-	default:
-		panic("Unsupported config file: " + filePath)
+		log.Infof("Package [%16s] load success", pkg.Name())
 	}
 }
 

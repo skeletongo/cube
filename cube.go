@@ -13,7 +13,7 @@ import (
 	"github.com/skeletongo/cube/timer"
 )
 
-func Run(config string) {
+func Run() {
 	log.Infof("Cube %v starting up", Version)
 
 	// 需要启用的功能模块
@@ -22,7 +22,7 @@ func Run(config string) {
 	Register(statsviz.Config)
 
 	// 读取配置文件，模块初始化
-	Load(config)
+	Load()
 	defer func() {
 		Close()
 		log.Infoln("Cube closed")

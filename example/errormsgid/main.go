@@ -32,5 +32,5 @@ func main() {
 		}
 	})
 
-	cube.Run("config.json")
+	cube.Run()
 }

@@ -22,5 +22,5 @@ func main() {
 		logrus.Info("ping:", c.Msg.(*Ping).Data)
 		c.Send(2, &Pong{Data: "pong"})
 	})
-	cube.Run("config.json")
+	cube.Run()
 }

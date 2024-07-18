@@ -35,5 +35,5 @@ func (m *myModule) Close() {
 func main() {
 	module.Register(new(myModule), time.Second*5, 0)
 	cube.Register(converter.Config)
-	cube.Run("config.json")
+	cube.Run()
 }
