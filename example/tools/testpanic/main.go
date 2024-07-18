@@ -48,7 +48,7 @@ func main() {
 
 	cube.Register(module.Config)
 	module.Register(new(myModule), time.Second*5, 0)
-	cube.Load("config.json")
+	cube.Load()
 	module.Start()
 	<-module.Obj.Closed
 }

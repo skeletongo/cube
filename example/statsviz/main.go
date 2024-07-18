@@ -50,6 +50,6 @@ func main() {
 
 	log.SetLevel(log.TraceLevel)
 	cube.Register(statsviz.Config)
-	cube.Load("config.json")
+	cube.Load()
 	select {}
 }

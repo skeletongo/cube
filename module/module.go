@@ -102,7 +102,13 @@ func New() *M {
 func (m *M) OnTick() {
 	switch m.state {
 	case StateInit:
+		if err := ExecuteHook(HookBeforeModuleInit); err != nil {
+			panic(fmt.Sprintf("HookBeforeModuleInit failed, err:%v", err))
+		}
 		m.init()
+		if err := ExecuteHook(HookAfterModuleInit); err != nil {
+			panic(fmt.Sprintf("HookAfterModuleInit failed, err:%v", err))
+		}
 	case StateUpdate:
 		m.update()
 	case StateClose:
@@ -259,4 +265,7 @@ func Close() {
 		gModuleMgr.Close()
 	})
 	<-gModuleMgr.Closed
+	if err := ExecuteHook(HookAfterModuleStop); err != nil {
+		panic(fmt.Sprintf("HookAfterModuleStop failed, err:%v", err))
+	}
 }
