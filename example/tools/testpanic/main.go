@@ -21,12 +21,18 @@ func (m *myModule) Init() {
 	panic("my module panic")
 }
 
+func (m *myModule) AfterInit() {
+	panic("my module panic")
+}
+
 func (m *myModule) Update() {
 	logrus.Error("error line 25")
 	logrus.Errorf("error line 26")
 	logrus.Errorln("error line 27")
 	panic("my module panic")
 }
+
+func (m *myModule) BeforeClose() {}
 
 func (m *myModule) Close() {
 	defer module.Release(m)

@@ -21,12 +21,16 @@ func (m *myModule) Init() {
 
 }
 
+func (m *myModule) AfterInit() {}
+
 func (m *myModule) Update() {
 	for _, v := range gostruct.TestSingle.Array {
 		fmt.Printf("%+v\n", *v)
 	}
 	fmt.Println()
 }
+
+func (m *myModule) BeforeClose() {}
 
 func (m *myModule) Close() {
 	defer module.Release(m)

@@ -20,9 +20,15 @@ type Module interface {
 	// Init 模块初始化方法
 	Init()
 
+	// AfterInit 模块初始化后方法
+	AfterInit()
+
 	// Update 模块执行方法
 	// 注意此方法不能有耗时操作，否则会导致程序阻塞
 	Update()
+
+	// BeforeClose 模块关闭
+	BeforeClose()
 
 	// Close 模块关闭方法
 	// 注意此方法不能有耗时操作，否则会导致程序阻塞
@@ -47,6 +53,12 @@ func (m *module) safeInit() {
 	m.mi.Init()
 }
 
+func (m *module) safeAfterInit() {
+	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeAfterInit", m.mi.Name()))
+
+	m.mi.AfterInit()
+}
+
 func (m *module) safeUpdate(t time.Time) {
 	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeUpdate", m.mi.Name()))
 
@@ -54,6 +66,12 @@ func (m *module) safeUpdate(t time.Time) {
 		m.lastTime = t
 		m.mi.Update()
 	}
+}
+
+func (m *module) safeBeforeClose() {
+	defer tools.RecoverPanicFunc(fmt.Sprintf("module(%v) safeBeforeClose", m.mi.Name()))
+
+	m.mi.BeforeClose()
 }
 
 func (m *module) safeClose() {
@@ -112,11 +130,17 @@ func (m *M) OnTick() {
 	case StateUpdate:
 		m.update()
 	case StateClose:
+		if err := ExecuteHook(HookBeforeModuleStop); err != nil {
+			log.Errorf("HookBeforeModuleStop faile, err:%v", err)
+		}
 		m.close()
 	case StateClosing:
 		m.closing()
 	case StateClosed:
 		m.closed()
+		if err := ExecuteHook(HookAfterModuleStop); err != nil {
+			log.Errorf("HookAfterModuleStop faile, err:%v", err)
+		}
 	}
 }
 
@@ -130,6 +154,15 @@ func (m *M) init() {
 	}
 	log.Info("module init[ok]")
 
+	log.Info("module after init...")
+	for e := m.mods.Front(); e != nil; e = e.Next() {
+		mod := e.Value.(*module)
+		log.Infof("module [%16s] after init...", mod.mi.Name())
+		mod.safeAfterInit()
+		log.Infof("module [%16s] after init[ok]", mod.mi.Name())
+	}
+	log.Info("module after init[ok]")
+
 	m.state = StateUpdate
 }
 
@@ -142,6 +175,15 @@ func (m *M) update() {
 
 func (m *M) close() {
 	m.modSign = make(chan string, m.mods.Len())
+
+	log.Info("module before close...")
+	for e := m.mods.Back(); e != nil; e = e.Prev() {
+		mod := e.Value.(*module)
+		log.Infof("module [%16s] before close...", mod.mi.Name())
+		mod.safeBeforeClose()
+		log.Infof("module [%16s] before close[ok]", mod.mi.Name())
+	}
+	log.Info("module before close[ok]")
 
 	log.Info("module close...")
 	for e := m.mods.Back(); e != nil; e = e.Prev() {
@@ -265,7 +307,4 @@ func Close() {
 		gModuleMgr.Close()
 	})
 	<-gModuleMgr.Closed
-	if err := ExecuteHook(HookAfterModuleStop); err != nil {
-		panic(fmt.Sprintf("HookAfterModuleStop failed, err:%v", err))
-	}
 }

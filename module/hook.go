@@ -7,6 +7,7 @@ type HookType int
 const (
 	HookBeforeModuleInit HookType = iota // 模块初始化之前
 	HookAfterModuleInit                  // 模块初始化之后
+	HookBeforeModuleStop                 // 模块停止之前
 	HookAfterModuleStop                  // 模块停止之后
 	HookMax
 )

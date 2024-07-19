@@ -65,10 +65,10 @@ type ServiceConfig struct {
 	WriteTimeout    time.Duration // 写入数据超时时长,单位秒
 	HTTPTimeout     time.Duration // websocket 建立连接的超时时间,单位秒
 
-	FilterChain []string // 过滤器列表，要启用的过滤器名称及调用顺序
-	filterChain *FilterChain
-	MiddleChain []string // 中间件列表，要启用的中间件名称及调用顺序
-	middleChain *MiddleChain
+	FilterChain []string     // 过滤器列表，要启用的过滤器名称及调用顺序
+	filterChain *FilterChain `json:"-"`
+	MiddleChain []string     // 中间件列表，要启用的中间件名称及调用顺序
+	middleChain *MiddleChain `json:"-"`
 
 	seq uint32
 }

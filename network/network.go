@@ -81,6 +81,10 @@ func (n *Network) Init() {
 	}
 }
 
+func (n *Network) AfterInit() {
+
+}
+
 func (n *Network) Update() {
 	select {
 	case config := <-n.configCh:
@@ -94,6 +98,10 @@ func (n *Network) Update() {
 			v.Update()
 		}
 	}
+}
+
+func (n *Network) BeforeClose() {
+
 }
 
 func (n *Network) Close() {
