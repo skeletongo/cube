@@ -23,7 +23,7 @@ func NewWSSession(s *Session, conn *websocket.Conn) (*WSSession, error) {
 	conn.SetReadLimit(int64(Config.LenMsgLen + Config.MaxMsgLen))
 
 	var err error
-	c := conn.UnderlyingConn().(*net.TCPConn)
+	c := conn.NetConn().(*net.TCPConn)
 	if s.SC.Linger > 0 {
 		if err = c.SetLinger(s.SC.Linger); err != nil {
 			return nil, err
